@@ -31,24 +31,30 @@ const ruleProviders = {
   "lancidr": { ...ruleProviderCommon, "behavior": "ipcidr", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt" }
 };
 
-const groupBaseOption = { "interval": 300, "timeout": 3000, "url": "https://www.google.com/generate_204", "lazy": true, "max-failed-times": 3 };
+// --- [策略组通用配置] ---
+const groupBaseOption = { 
+  "interval": 300, 
+  "timeout": 3000,          // 节点秒开：3秒超时，快速判定不可用节点
+  "url": "https://www.google.com/generate_204", 
+  "lazy": true, 
+  "max-failed-times": 3 
+};
 
 function main(config) {
   if (!config) return config;
 
-  // --- [核心修改] TUN 模式强制强化 ---
-  // 通过脚本直接覆盖内核参数，实现所谓的“严格路由”
+  // TUN 模式强化 (针对 FlClash 等软件)
   config["tun"] = {
     "enable": true,
-    "stack": "system", // 也可以尝试 gvisor，如果 system 模式下泄露依然严重
+    "stack": "system",
     "auto-route": true,
     "auto-detect-interface": true,
-    "dns-hijack": ["any:53"], // 强制劫持所有 53 端口流量
-    "strict-route": true,      // 强制开启严格路由
+    "dns-hijack": ["any:53"],
+    "strict-route": true, 
     "mtu": 1500
   };
 
-  // 开启嗅探，解决 TUN 下 IP 直接连接导致无法匹配域名的尴尬
+  // 开启嗅探
   config["sniffer"] = {
     "enable": true,
     "sniff": {
@@ -60,7 +66,6 @@ function main(config) {
   config["dns"] = dnsConfig;
   config["rule-providers"] = ruleProviders;
 
-  // 策略组布局 (保持 v0.4.5 的完美视觉逻辑)
   config["proxy-groups"] = [
     {
       ...groupBaseOption,
@@ -70,7 +75,14 @@ function main(config) {
       "include-all": true,
       "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
     },
-    { ...groupBaseOption, "name": "延迟选优", "type": "url-test", "tolerance": 100, "include-all": true, "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$" },
+    { 
+      ...groupBaseOption, 
+      "name": "延迟选优", 
+      "type": "url-test", 
+      "tolerance": 150,     // 容差 150ms，防止网络微小波动导致的频繁跳点
+      "include-all": true, 
+      "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$" 
+    },
     { ...groupBaseOption, "name": "故障转移", "type": "fallback", "include-all": true, "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$" },
     {
       "name": "PikPak",
