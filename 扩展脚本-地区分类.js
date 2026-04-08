@@ -1,16 +1,17 @@
-// --- 1. DNS 深度防泄露配置 ---
+// --- 1. DNS 双栈优化配置 ---
 const domesticNameservers = ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"];
 const foreignNameservers = ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"];
 
 const dnsConfig = {
   "enable": true,
   "listen": "0.0.0.0:1053",
-  "ipv6": false,
+  "ipv6": true,            // [核心] 开启 IPv6 支持
   "enhanced-mode": "fake-ip",
   "fake-ip-range": "198.18.0.1/16",
+  "fake-ip-ipv6": true,    // [核心] 为 IPv6 流量分配 Fake-IP
   "respect-rules": true, 
   "fake-ip-filter": ["+.lan", "+.local", "+.msftconnecttest.com", "+.msftncsi.com", "localhost.ptlogin2.qq.com", "time.*.com"],
-  "default-nameserver": ["223.5.5.5", "119.29.29.29"],
+  "default-nameserver": ["223.5.5.5", "119.29.29.29", "2400:3200::1"],
   "nameserver": [...foreignNameservers],
   "proxy-server-nameserver": [...domesticNameservers], 
   "nameserver-policy": {
@@ -19,7 +20,7 @@ const dnsConfig = {
   }
 };
 
-// --- 2. 规则集定义 ---
+// --- 2. 规则集定义 (保持不变) ---
 const ruleProviderCommon = { "type": "http", "format": "yaml", "interval": 86400 };
 const ruleProviders = {
   "reject": { ...ruleProviderCommon, "behavior": "domain", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt" },
@@ -31,19 +32,18 @@ const ruleProviders = {
   "lancidr": { ...ruleProviderCommon, "behavior": "ipcidr", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt" }
 };
 
-// --- [策略组通用配置] ---
-const groupBaseOption = { 
-  "interval": 300, 
-  "timeout": 3000,          // 节点秒开：3秒超时，快速判定不可用节点
-  "url": "https://www.google.com/generate_204", 
-  "lazy": true, 
-  "max-failed-times": 3 
-};
+const groupBaseOption = { "interval": 300, "timeout": 3000, "url": "https://www.google.com/generate_204", "lazy": true, "max-failed-times": 3 };
 
 function main(config) {
   if (!config) return config;
 
-  // TUN 模式强化 (针对 FlClash 等软件)
+  // --- [内核优化：双栈偏好] ---
+  config["ipv6"] = true;
+  config["tcp-concurrent"] = true;
+  // 设置首选协议：如果节点支持，优先尝试哪个？
+  // "prefer-ipv6": true (如果想激进尝试 V6 可开启)
+
+  // --- [TUN 模式双栈适配] ---
   config["tun"] = {
     "enable": true,
     "stack": "system",
@@ -51,15 +51,17 @@ function main(config) {
     "auto-detect-interface": true,
     "dns-hijack": ["any:53"],
     "strict-route": true, 
-    "mtu": 1500
+    "mtu": 1500,
+    "device": "utun",
+    "strict-ipv6-backup": false // 允许 IPv6 备选路径，防止 V6 网站打不开
   };
 
-  // 开启嗅探
   config["sniffer"] = {
     "enable": true,
     "sniff": {
       "TLS": { "ports": [443, 8443] },
-      "HTTP": { "ports": [80, "8080-8880"], "override-destination": true }
+      "HTTP": { "ports": [80, "8080-8880"], "override-destination": true },
+      "QUIC": { "ports": [443, 8443] }
     }
   };
 
@@ -75,14 +77,7 @@ function main(config) {
       "include-all": true,
       "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
     },
-    { 
-      ...groupBaseOption, 
-      "name": "延迟选优", 
-      "type": "url-test", 
-      "tolerance": 150,     // 容差 150ms，防止网络微小波动导致的频繁跳点
-      "include-all": true, 
-      "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$" 
-    },
+    { ...groupBaseOption, "name": "延迟选优", "type": "url-test", "tolerance": 150, "include-all": true, "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$" },
     { ...groupBaseOption, "name": "故障转移", "type": "fallback", "include-all": true, "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$" },
     {
       "name": "PikPak",
@@ -116,13 +111,22 @@ function main(config) {
     "RULE-SET,direct,全局直连",
     "RULE-SET,lancidr,全局直连,no-resolve",
     "RULE-SET,cncidr,全局直连,no-resolve",
+    // 增加针对 IPv6 CIDR 的直连判断
+    "IP-CIDR6,::1/128,DIRECT,no-resolve",
+    "IP-CIDR6,fc00::/7,DIRECT,no-resolve",
+    "IP-CIDR6,fe80::/10,DIRECT,no-resolve",
     "GEOIP,LAN,全局直连,no-resolve",
     "GEOIP,CN,全局直连,no-resolve",
     "MATCH,漏网之鱼"
   ];
 
   if (config.proxies && Array.isArray(config.proxies)) {
-    config.proxies.forEach(p => { if (p) p.udp = true; });
+    config.proxies.forEach(p => { 
+      if (p) {
+        p.udp = true;
+        p.xudp = true;
+      }
+    });
   }
 
   return config;
