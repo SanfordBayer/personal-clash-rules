@@ -79,7 +79,7 @@ function main(config) {
       "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
     },
 
-    // B. 业务专用组 (PikPak) - 已更正大小写
+    // B. 业务专用组 (PikPak) - 修改这里决定了软件界面显示的名字
     {
       "name": "PikPak",
       "type": "select",
@@ -110,7 +110,7 @@ function main(config) {
 
   config["rules"] = [
     "RULE-SET,reject,全局拦截",
-    "RULE-SET,pikpak,PikPak", // 必须同步指向更正后的策略组名 PikPak
+    "RULE-SET,pikpak,PikPak", // 指向必须与上方 name 严格一致
     "RULE-SET,proxy,节点选择",
     "RULE-SET,gfw,节点选择",
     "RULE-SET,direct,全局直连",
