@@ -1,5 +1,5 @@
-# Mihomo/Clash Meta Template - v0.7.0
-# Optimized for subscription converters (target: clash.meta)
+# Mihomo/Clash Meta Template - v0.7.1
+# Fixed: Strict string type for all URL fields to pass client validation
 # Compatible with: Clash Verge Rev, Mihomo Party, FlClash
 
 mixed-port: 7890
