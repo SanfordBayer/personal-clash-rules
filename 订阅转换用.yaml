@@ -1,9 +1,9 @@
 # ---------------------------------------------------
-# Clash 订阅转换自定义远程配置 (v0.3)
-# 更新说明：移除韩国，新增“其他地区”自动分类逻辑
+# Clash 订阅转换自定义远程配置 (v0.4)
+# 更新说明：新增 Pikpak 专属规则，新加坡节点优先
 # ---------------------------------------------------
 
-# 1. DNS 设置 (防泄漏逻辑)
+# 1. DNS 设置
 dns:
   enable: true
   listen: 0.0.0.0:1053
@@ -17,9 +17,7 @@ dns:
     - "+.msftconnecttest.com"
     - "+.msftncsi.com"
     - "time.*.com"
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
+  default-nameserver: [223.5.5.5, 119.29.29.29]
   nameserver:
     - 'https://1.1.1.1/dns-query'
     - 'https://8.8.4.4/dns-query'
@@ -40,7 +38,15 @@ proxy-groups:
       - 台湾-自动
       - 日本-自动
       - 新加坡-自动
-      - 其他地区 # 新增分类
+      - 其他地区
+      - DIRECT
+
+  # 【新增】Pikpak 专属组：新加坡优先逻辑
+  - name: Pikpak
+    type: select
+    proxies:
+      - 新加坡-自动
+      - 节点选择
       - DIRECT
 
   - name: 延迟选优
@@ -58,82 +64,3 @@ proxy-groups:
     include-all: true
 
   # --- 地区自动选择组 ---
-  - name: 香港-自动
-    type: url-test
-    include-all: true
-    filter: "(?=.*(香港|HK|Hong Kong|🇭🇰)).*$"
-
-  - name: 美国-自动
-    type: url-test
-    include-all: true
-    filter: "(?=.*(美国|US|United States|🇺🇸)).*$"
-
-  - name: 台湾-自动
-    type: url-test
-    include-all: true
-    filter: "(?=.*(台湾|TW|Tai Wan|🇹🇼)).*$"
-
-  - name: 日本-自动
-    type: url-test
-    include-all: true
-    filter: "(?=.*(日本|JP|Japan|🇯🇵)).*$"
-
-  - name: 新加坡-自动
-    type: url-test
-    include-all: true
-    filter: "(?=.*(新加坡|SG|Singapore|🇸🇬)).*$"
-
-  - name: 其他地区
-    type: url-test
-    include-all: true
-    # 核心：使用负向先行断言，排除掉上述五个地区名、国旗及无意义节点
-    filter: "^(?!.*(香港|HK|Hong Kong|🇭🇰|美国|US|United States|🇺🇸|台湾|TW|Tai Wan|🇹🇼|日本|JP|Japan|🇯🇵|新加坡|SG|Singapore|🇸🇬|官网|套餐|流量|异常|剩余)).*$"
-
-  - name: 全局直连
-    type: select
-    proxies:
-      - DIRECT
-      - 节点选择
-
-  - name: 全局拦截
-    type: select
-    proxies:
-      - REJECT
-      - DIRECT
-
-  - name: 漏网之鱼
-    type: select
-    proxies:
-      - 节点选择
-      - 延迟选优
-      - 全局直连
-
-# 3. 规则集配置
-rule-providers:
-  reject:
-    type: http
-    behavior: domain
-    url: "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
-    path: ./ruleset/reject.yaml
-    interval: 86400
-  proxy:
-    type: http
-    behavior: domain
-    url: "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
-    path: ./ruleset/proxy.yaml
-    interval: 86400
-  direct:
-    type: http
-    behavior: domain
-    url: "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
-    path: ./ruleset/direct.yaml
-    interval: 86400
-
-# 4. 分流规则
-rules:
-  - RULE-SET,reject,全局拦截
-  - RULE-SET,proxy,节点选择
-  - RULE-SET,direct,全局直连
-  - GEOIP,LAN,全局直连,no-resolve
-  - GEOIP,CN,全局直连,no-resolve
-  - MATCH,漏网之鱼
