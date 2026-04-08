@@ -1,4 +1,4 @@
-// Clash Override v0.7.0 | Mihomo >= 1.18.0 | Dual-Stack Smart Routing
+// Clash Override v0.7.1 | Mihomo >= 1.18.0 | Dual-Stack Smart Routing
 const CONFIG = {
   DNS_PORT: 1054,
   DNS_IPV6: true,
@@ -28,11 +28,8 @@ const dnsConfig = {
   "nameserver-policy": { "geosite:cn,private": domesticNS, "geosite:geolocation-!cn": foreignNS }
 };
 
-const ruleUrl = (n) => [
-  `https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/${n}.txt`,
-  `https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/${n}.txt`,
-  `https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/${n}.txt`
-];
+// Fixed: Return single string for strict type validation in clients like Mihomo Party
+const ruleUrl = (n) => `https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/${n}.txt`;
 const ruleProviders = {
   reject: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("reject") },
   pikpak: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("pikpak") },
@@ -47,7 +44,7 @@ const groupBase = { interval: 300, timeout: 3000, url: CONFIG.SPEED_TEST_URL, la
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Override] v0.7.0 | Proxies: ${config.proxies?.length || 0}`);
+  console.log(`[Override] v0.7.1 | Proxies: ${config.proxies?.length || 0}`);
 
   // Core settings
   config.ipv6 = CONFIG.DNS_IPV6;
