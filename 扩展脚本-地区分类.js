@@ -1,12 +1,6 @@
-// --- 1. DNS 配置 (深度优化防止 TUN 泄露) ---
-const domesticNameservers = [
-  "https://223.5.5.5/dns-query", 
-  "https://doh.pub/dns-query"
-];
-const foreignNameservers = [
-  "https://1.1.1.1/dns-query",
-  "https://8.8.4.4/dns-query"
-];
+// --- 1. DNS 深度防泄露配置 ---
+const domesticNameservers = ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"];
+const foreignNameservers = ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"];
 
 const dnsConfig = {
   "enable": true,
@@ -14,18 +8,18 @@ const dnsConfig = {
   "ipv6": false,
   "enhanced-mode": "fake-ip",
   "fake-ip-range": "198.18.0.1/16",
-  "respect-rules": true, // 必须：在 TUN 模式下优先执行规则
+  "respect-rules": true, 
   "fake-ip-filter": ["+.lan", "+.local", "+.msftconnecttest.com", "+.msftncsi.com", "localhost.ptlogin2.qq.com", "time.*.com"],
-  "default-nameserver": ["223.5.5.5", "1.1.1.1"],
+  "default-nameserver": ["223.5.5.5", "119.29.29.29"],
   "nameserver": [...foreignNameservers],
-  "proxy-server-nameserver": [...domesticNameservers], // 必须：防止代理服务器域名解析泄露
+  "proxy-server-nameserver": [...domesticNameservers], 
   "nameserver-policy": {
     "geosite:cn,private": domesticNameservers,
     "geosite:geolocation-!cn": foreignNameservers
   }
 };
 
-// --- 2. 规则集配置 ---
+// --- 2. 规则集定义 ---
 const ruleProviderCommon = { "type": "http", "format": "yaml", "interval": 86400 };
 const ruleProviders = {
   "reject": { ...ruleProviderCommon, "behavior": "domain", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt" },
@@ -39,27 +33,34 @@ const ruleProviders = {
 
 const groupBaseOption = { "interval": 300, "timeout": 3000, "url": "https://www.google.com/generate_204", "lazy": true, "max-failed-times": 3 };
 
-// --- 3. 主函数 ---
 function main(config) {
   if (!config) return config;
 
-  // 1. 注入 DNS
-  config["dns"] = dnsConfig;
+  // --- [核心修改] TUN 模式强制强化 ---
+  // 通过脚本直接覆盖内核参数，实现所谓的“严格路由”
+  config["tun"] = {
+    "enable": true,
+    "stack": "system", // 也可以尝试 gvisor，如果 system 模式下泄露依然严重
+    "auto-route": true,
+    "auto-detect-interface": true,
+    "dns-hijack": ["any:53"], // 强制劫持所有 53 端口流量
+    "strict-route": true,      // 强制开启严格路由
+    "mtu": 1500
+  };
 
-  // 2. 注入嗅探 (Sniffer) - 解决 TUN 模式下 IP 解析域名的关键
+  // 开启嗅探，解决 TUN 下 IP 直接连接导致无法匹配域名的尴尬
   config["sniffer"] = {
     "enable": true,
     "sniff": {
       "TLS": { "ports": [443, 8443] },
       "HTTP": { "ports": [80, "8080-8880"], "override-destination": true }
-    },
-    "force-domain": ["+.google.com", "+.facebook.com", "+.youtube.com", "+.mypikpak.com"]
+    }
   };
 
-  // 3. 注入规则集
+  config["dns"] = dnsConfig;
   config["rule-providers"] = ruleProviders;
 
-  // 4. 注入策略组 (保持 v0.4.5 的布局)
+  // 策略组布局 (保持 v0.4.5 的完美视觉逻辑)
   config["proxy-groups"] = [
     {
       ...groupBaseOption,
@@ -95,7 +96,6 @@ function main(config) {
     { "name": "漏网之鱼", "type": "select", "proxies": ["节点选择", "延迟选优", "全局直连"] }
   ];
 
-  // 5. 规则分流
   config["rules"] = [
     "RULE-SET,reject,全局拦截",
     "RULE-SET,pikpak,PikPak",
@@ -109,7 +109,6 @@ function main(config) {
     "MATCH,漏网之鱼"
   ];
 
-  // UDP 开启
   if (config.proxies && Array.isArray(config.proxies)) {
     config.proxies.forEach(p => { if (p) p.udp = true; });
   }
