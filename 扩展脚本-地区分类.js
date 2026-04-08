@@ -1,4 +1,4 @@
-// Clash Override v0.7.2 | Performance & Stability Focus
+// Clash Override v0.7.3 | Android/FlClash Compatible Fix
 const CONFIG = {
   DNS_PORT: 1054,
   DNS_IPV6: true,
@@ -40,17 +40,27 @@ const ruleProviders = {
   lancidr:{ type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("lancidr") }
 };
 
-// Optimized for stability: longer interval, higher timeout, wider tolerance
 const groupBase = { interval: 600, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, "max-failed-times": 5, tolerance: 200 };
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Override] v0.7.2 | Raw Proxies: ${config.proxies?.length || 0}`);
+  console.log(`[Override] v0.7.3 | Raw Proxies: ${config.proxies?.length || 0}`);
 
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
   config.tun = { enable: true, stack: "system", "auto-route": true, "auto-detect-interface": true, "dns-hijack": ["any:53"], "strict-route": true, mtu: 1500 };
-  config.sniffer = { enable: true, "parse-pure-ip": false, "force-dns-mapping": true, sniff: { TLS: { ports: [443, 8443], "override-destination": true }, HTTP: { ports: [80, 8080-8880], "override-destination": true }, QUIC: { ports: [443, 8443] } } };
+  
+  // Fixed: Pure integer port arrays to prevent FlClash Android intRanges error
+  config.sniffer = { 
+    enable: true, 
+    "parse-pure-ip": false, 
+    "force-dns-mapping": true, 
+    sniff: { 
+      TLS: { ports: [443, 8443], "override-destination": true }, 
+      HTTP: { ports: [80, 8080, 8443], "override-destination": true }, 
+      QUIC: { ports: [443, 8443] } 
+    } 
+  };
 
   config.dns = dnsConfig;
   config["rule-providers"] = ruleProviders;
@@ -92,6 +102,6 @@ function main(config) {
     });
   }
 
-  console.log(`[Override] v0.7.2 | Valid Nodes: ${config.proxies?.length || 0} | DNS:${dnsConfig.listen}`);
+  console.log(`[Override] v0.7.3 | Valid Nodes: ${config.proxies?.length || 0} | DNS:${dnsConfig.listen}`);
   return config;
 }
