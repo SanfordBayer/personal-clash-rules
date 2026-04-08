@@ -34,7 +34,9 @@ const ruleProviders = {
   "direct": { ...ruleProviderCommon, "behavior": "domain", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt" },
   "gfw": { ...ruleProviderCommon, "behavior": "domain", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt" },
   "cncidr": { ...ruleProviderCommon, "behavior": "ipcidr", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt" },
-  "lancidr": { ...ruleProviderCommon, "behavior": "ipcidr", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt" }
+  "lancidr": { ...ruleProviderCommon, "behavior": "ipcidr", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt" },
+  // 【新增】：Pikpak 规则集
+  "pikpak": { ...ruleProviderCommon, "behavior": "domain", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt" }
 };
 
 const groupBaseOption = {
@@ -46,6 +48,8 @@ const groupBaseOption = {
 };
 
 function main(config) {
+  if (!config) return config;
+
   config["dns"] = dnsConfig;
   config["rule-providers"] = ruleProviders;
 
@@ -57,6 +61,12 @@ function main(config) {
       "proxies": ["延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "新加坡-自动", "其他地区", "DIRECT"],
       "include-all": true,
       "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
+    },
+    // 【新增】：Pikpak 专属策略组
+    {
+      "name": "Pikpak",
+      "type": "select",
+      "proxies": ["新加坡-自动", "节点选择", "DIRECT"]
     },
     {
       ...groupBaseOption,
@@ -73,70 +83,27 @@ function main(config) {
       "include-all": true,
       "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
     },
-    // --- 地区自动选择组 ---
-    {
-      ...groupBaseOption,
-      "name": "香港-自动",
-      "type": "url-test",
-      "include-all": true,
-      "filter": "(?=.*(香港|HK|Hong Kong|🇭🇰)).*$"
-    },
-    {
-      ...groupBaseOption,
-      "name": "美国-自动",
-      "type": "url-test",
-      "include-all": true,
-      "filter": "(?=.*(美国|US|United States|🇺🇸)).*$"
-    },
-    {
-      ...groupBaseOption,
-      "name": "台湾-自动",
-      "type": "url-test",
-      "include-all": true,
-      "filter": "(?=.*(台湾|TW|Tai Wan|🇹🇼)).*$"
-    },
-    {
-      ...groupBaseOption,
-      "name": "日本-自动",
-      "type": "url-test",
-      "include-all": true,
-      "filter": "(?=.*(日本|JP|Japan|🇯🇵)).*$"
-    },
-    {
-      ...groupBaseOption,
-      "name": "新加坡-自动",
-      "type": "url-test",
-      "include-all": true,
-      "filter": "(?=.*(新加坡|SG|Singapore|🇸🇬)).*$"
-    },
+    { ...groupBaseOption, "name": "香港-自动", "type": "url-test", "include-all": true, "filter": "(?=.*(香港|HK|Hong Kong|🇭🇰)).*$" },
+    { ...groupBaseOption, "name": "美国-自动", "type": "url-test", "include-all": true, "filter": "(?=.*(美国|US|United States|🇺🇸)).*$" },
+    { ...groupBaseOption, "name": "台湾-自动", "type": "url-test", "include-all": true, "filter": "(?=.*(台湾|TW|Tai Wan|🇹🇼)).*$" },
+    { ...groupBaseOption, "name": "日本-自动", "type": "url-test", "include-all": true, "filter": "(?=.*(日本|JP|Japan|🇯🇵)).*$" },
+    { ...groupBaseOption, "name": "新加坡-自动", "type": "url-test", "include-all": true, "filter": "(?=.*(新加坡|SG|Singapore|🇸🇬)).*$" },
     {
       ...groupBaseOption,
       "name": "其他地区",
       "type": "url-test",
       "include-all": true,
-      // 核心逻辑：排除掉上述五个地区名、国旗图标及干扰词
       "filter": "^(?!.*(香港|HK|Hong Kong|🇭🇰|美国|US|United States|🇺🇸|台湾|TW|Tai Wan|🇹🇼|日本|JP|Japan|🇯🇵|新加坡|SG|Singapore|🇸🇬|官网|套餐|流量|异常|剩余)).*$"
     },
-    // --- 基础状态组 ---
-    {
-      "name": "全局直连",
-      "type": "select",
-      "proxies": ["DIRECT", "节点选择"]
-    },
-    {
-      "name": "全局拦截",
-      "type": "select",
-      "proxies": ["REJECT", "DIRECT"]
-    },
-    {
-      "name": "漏网之鱼",
-      "type": "select",
-      "proxies": ["节点选择", "延迟选优", "全局直连"]
-    }
+    { "name": "全局直连", "type": "select", "proxies": ["DIRECT", "节点选择"] },
+    { "name": "全局拦截", "type": "select", "proxies": ["REJECT", "DIRECT"] },
+    { "name": "漏网之鱼", "type": "select", "proxies": ["节点选择", "延迟选优", "全局直连"] }
   ];
 
   config["rules"] = [
     "RULE-SET,reject,全局拦截",
+    // 【新增】：Pikpak 规则置顶
+    "RULE-SET,pikpak,Pikpak",
     "RULE-SET,proxy,节点选择",
     "RULE-SET,gfw,节点选择",
     "RULE-SET,direct,全局直连",
@@ -147,8 +114,8 @@ function main(config) {
     "MATCH,漏网之鱼"
   ];
 
-  if (config["proxies"]) {
-    config["proxies"].forEach(p => p.udp = true);
+  if (config.proxies && Array.isArray(config.proxies)) {
+    config.proxies.forEach(p => { if (p) p.udp = true; });
   }
 
   return config;
