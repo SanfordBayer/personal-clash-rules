@@ -50,11 +50,9 @@ const groupBaseOption = {
 function main(config) {
   if (!config) return config;
 
-  // 注入 DNS 和 规则集
   config["dns"] = dnsConfig;
   config["rule-providers"] = ruleProviders;
 
-  // 注入策略组
   config["proxy-groups"] = [
     // A. 核心控制组
     {
@@ -81,9 +79,9 @@ function main(config) {
       "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
     },
 
-    // B. 业务专用组 (PikPak) - 包含全部节点供手动切换
+    // B. 业务专用组 (PikPak) - 已更正大小写
     {
-      "name": "Pikpak",
+      "name": "PikPak",
       "type": "select",
       "include-all": true,
       "proxies": ["新加坡-自动", "节点选择", "延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "其他地区", "DIRECT"],
@@ -110,10 +108,9 @@ function main(config) {
     { "name": "漏网之鱼", "type": "select", "proxies": ["节点选择", "延迟选优", "全局直连"] }
   ];
 
-  // 注入分流规则 (顺序严密)
   config["rules"] = [
     "RULE-SET,reject,全局拦截",
-    "RULE-SET,pikpak,Pikpak", // PikPak 规则置顶挂载
+    "RULE-SET,pikpak,PikPak", // 必须同步指向更正后的策略组名 PikPak
     "RULE-SET,proxy,节点选择",
     "RULE-SET,gfw,节点选择",
     "RULE-SET,direct,全局直连",
@@ -124,11 +121,8 @@ function main(config) {
     "MATCH,漏网之鱼"
   ];
 
-  // 全局节点 UDP 开启
   if (config.proxies && Array.isArray(config.proxies)) {
-    config.proxies.forEach(p => {
-      if (p) p.udp = true;
-    });
+    config.proxies.forEach(p => { if (p) p.udp = true; });
   }
 
   return config;
