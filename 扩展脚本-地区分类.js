@@ -1,7 +1,7 @@
 // 国内 DNS 
 const domesticNameservers = [
-  "https://223.5.5.5/dns-query", // 阿里
-  "https://doh.pub/dns-query"    // 腾讯
+  "https://223.5.5.5/dns-query", 
+  "https://doh.pub/dns-query"
 ];
 // 国外 DNS
 const foreignNameservers = [
@@ -37,7 +37,6 @@ const ruleProviders = {
   "lancidr": { ...ruleProviderCommon, "behavior": "ipcidr", "url": "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt" }
 };
 
-// 代理组通用模板
 const groupBaseOption = {
   "interval": 300,
   "timeout": 3000,
@@ -47,20 +46,15 @@ const groupBaseOption = {
 };
 
 function main(config) {
-  // 1. 注入 DNS 配置
   config["dns"] = dnsConfig;
-
-  // 2. 注入 规则集
   config["rule-providers"] = ruleProviders;
 
-  // 3. 定义 代理组
   config["proxy-groups"] = [
     {
       ...groupBaseOption,
       "name": "节点选择",
       "type": "select",
-      // 【修复说明】：将原来的 "全局直连" 替换为底层的 "DIRECT"，打破死循环
-      "proxies": ["延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "新加坡-自动", "韩国-自动", "DIRECT"],
+      "proxies": ["延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "新加坡-自动", "其他地区", "DIRECT"],
       "include-all": true,
       "filter": "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
     },
@@ -117,10 +111,11 @@ function main(config) {
     },
     {
       ...groupBaseOption,
-      "name": "韩国-自动",
+      "name": "其他地区",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?=.*(韩国|KR|Korea|🇰🇷)).*$"
+      // 核心逻辑：排除掉上述五个地区名、国旗图标及干扰词
+      "filter": "^(?!.*(香港|HK|Hong Kong|🇭🇰|美国|US|United States|🇺🇸|台湾|TW|Tai Wan|🇹🇼|日本|JP|Japan|🇯🇵|新加坡|SG|Singapore|🇸🇬|官网|套餐|流量|异常|剩余)).*$"
     },
     // --- 基础状态组 ---
     {
@@ -140,7 +135,6 @@ function main(config) {
     }
   ];
 
-  // 4. 定义 规则逻辑 
   config["rules"] = [
     "RULE-SET,reject,全局拦截",
     "RULE-SET,proxy,节点选择",
@@ -153,7 +147,6 @@ function main(config) {
     "MATCH,漏网之鱼"
   ];
 
-  // 5. 开启所有节点的 UDP 支持
   if (config["proxies"]) {
     config["proxies"].forEach(p => p.udp = true);
   }
