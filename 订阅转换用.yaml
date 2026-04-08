@@ -44,9 +44,18 @@ proxy-groups:
   # 【新增】Pikpak 专属组：新加坡优先逻辑
   - name: Pikpak
     type: select
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余)).*$"
     proxies:
       - 新加坡-自动
       - 节点选择
+      - 延迟选优
+      - 故障转移
+      - 香港-自动
+      - 美国-自动
+      - 台湾-自动
+      - 日本-自动
+      - 其他地区
       - DIRECT
 
   - name: 延迟选优
