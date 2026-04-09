@@ -1,4 +1,4 @@
-// Clash Override v0.7.4 | Full Node List & Stability
+// Clash Override v0.8.1 | Telegram Optimized & Lightweight
 const CONFIG = {
   DNS_PORT: 1054,
   DNS_IPV6: true,
@@ -7,6 +7,7 @@ const CONFIG = {
   XUDP_SAFE_MODE: true,
   FILTER_KEYWORDS: ["官网", "套餐", "流量", "异常", "剩余", "过期", "失效", "维护", "高倍", "倍率", "测试", "Test", "备用"],
   SPEED_TEST_URL: "https://www.gstatic.com/generate_204",
+  RULE_BASE_URL: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release",
   RULE_UPDATE_INTERVAL: 86400
 };
 
@@ -28,7 +29,7 @@ const dnsConfig = {
   "nameserver-policy": { "geosite:cn,private": domesticNS, "geosite:geolocation-!cn": foreignNS }
 };
 
-const ruleUrl = (n) => `https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/${n}.txt`;
+const ruleUrl = (n) => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
 const ruleProviders = {
   reject: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("reject") },
   pikpak: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("pikpak") },
@@ -43,22 +44,13 @@ const groupBase = { interval: 600, timeout: 5000, url: CONFIG.SPEED_TEST_URL, la
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Override] v0.7.4 | Raw Proxies: ${config.proxies?.length || 0}`);
+  console.log(`[Override] v0.8.1 | Telegram Optimized`);
+  console.log(`[Override] Raw Proxies: ${config.proxies?.length || 0}`);
 
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
   config.tun = { enable: true, stack: "system", "auto-route": true, "auto-detect-interface": true, "dns-hijack": ["any:53"], "strict-route": true, mtu: 1500 };
-  
-  config.sniffer = { 
-    enable: true, 
-    "parse-pure-ip": false, 
-    "force-dns-mapping": true, 
-    sniff: { 
-      TLS: { ports: [443, 8443], "override-destination": true }, 
-      HTTP: { ports: [80, 8080, 8443], "override-destination": true }, 
-      QUIC: { ports: [443, 8443] } 
-    } 
-  };
+  config.sniffer = { enable: true, "parse-pure-ip": false, "force-dns-mapping": true, sniff: { TLS: { ports: [443, 8443], "override-destination": true }, HTTP: { ports: [80, 8080, 8443], "override-destination": true }, QUIC: { ports: [443, 8443] } } };
 
   config.dns = dnsConfig;
   config["rule-providers"] = ruleProviders;
@@ -71,7 +63,7 @@ function main(config) {
     { ...groupBase, name: "节点选择", type: "select", proxies: ["延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "新加坡-自动", "其他地区", "DIRECT"], "include-all": true, filter: safeFilter },
     { ...groupBase, name: "延迟选优", type: "url-test", "include-all": true, filter: safeFilter },
     { ...groupBase, name: "故障转移", type: "fallback", "include-all": true, filter: safeFilter },
-    { name: "PikPak", type: "select", "include-all": true, proxies: ["新加坡-自动", "节点选择", "延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "其他地区", "DIRECT"], filter: safeFilter },
+    { name: "Telegram", type: "select", "include-all": true, proxies: ["新加坡-自动", "美国-自动", "节点选择", "延迟选优", "故障转移", "香港-自动", "台湾-自动", "日本-自动", "其他地区", "DIRECT"], filter: safeFilter },
     { ...groupBase, name: "香港-自动", type: "url-test", "include-all": true, filter: regionRe("hk") },
     { ...groupBase, name: "美国-自动", type: "url-test", "include-all": true, filter: regionRe("us") },
     { ...groupBase, name: "台湾-自动", type: "url-test", "include-all": true, filter: regionRe("tw") },
@@ -84,10 +76,25 @@ function main(config) {
   ];
 
   config.rules = [
-    "RULE-SET,reject,全局拦截", "RULE-SET,pikpak,PikPak", "RULE-SET,proxy,节点选择", "RULE-SET,gfw,节点选择",
-    "RULE-SET,direct,全局直连", "RULE-SET,lancidr,全局直连,no-resolve", "RULE-SET,cncidr,全局直连,no-resolve",
-    "IP-CIDR6,::1/128,DIRECT,no-resolve", "IP-CIDR6,fc00::/7,DIRECT,no-resolve", "IP-CIDR6,fe80::/10,DIRECT,no-resolve",
-    "GEOIP,LAN,全局直连,no-resolve", "GEOIP,CN,全局直连,no-resolve", "MATCH,漏网之鱼"
+    "RULE-SET,reject,全局拦截", 
+    "RULE-SET,pikpak,PikPak", 
+    "RULE-SET,proxy,节点选择", 
+    "RULE-SET,gfw,节点选择",
+    "DOMAIN-SUFFIX,telegram.org,Telegram",
+    "DOMAIN-SUFFIX,telegram.me,Telegram", 
+    "DOMAIN-KEYWORD,telegram,Telegram",
+    "IP-CIDR,91.108.0.0/16,Telegram,no-resolve",
+    "IP-CIDR,149.154.160.0/20,Telegram,no-resolve",
+    "IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve",
+    "RULE-SET,direct,全局直连", 
+    "RULE-SET,lancidr,全局直连,no-resolve", 
+    "RULE-SET,cncidr,全局直连,no-resolve",
+    "IP-CIDR6,::1/128,DIRECT,no-resolve", 
+    "IP-CIDR6,fc00::/7,DIRECT,no-resolve", 
+    "IP-CIDR6,fe80::/10,DIRECT,no-resolve",
+    "GEOIP,LAN,全局直连,no-resolve", 
+    "GEOIP,CN,全局直连,no-resolve", 
+    "MATCH,漏网之鱼"
   ];
 
   if (config.proxies?.length) {
@@ -99,6 +106,6 @@ function main(config) {
     });
   }
 
-  console.log(`[Override] v0.7.4 | Valid Nodes: ${config.proxies?.length || 0} | DNS:${dnsConfig.listen}`);
+  console.log(`[Override] v0.8.1 | Valid Nodes: ${config.proxies?.length || 0} | DNS:${dnsConfig.listen}`);
   return config;
 }
