@@ -1,4 +1,4 @@
-// Clash Override v0.7.3 | Android/FlClash Compatible Fix
+// Clash Override v0.7.4 | Full Node List & Stability
 const CONFIG = {
   DNS_PORT: 1054,
   DNS_IPV6: true,
@@ -6,7 +6,6 @@ const CONFIG = {
   TCP_CONCURRENT: true,
   XUDP_SAFE_MODE: true,
   FILTER_KEYWORDS: ["官网", "套餐", "流量", "异常", "剩余", "过期", "失效", "维护", "高倍", "倍率", "测试", "Test", "备用"],
-  MAX_NODES: 120,
   SPEED_TEST_URL: "https://www.gstatic.com/generate_204",
   RULE_UPDATE_INTERVAL: 86400
 };
@@ -44,13 +43,12 @@ const groupBase = { interval: 600, timeout: 5000, url: CONFIG.SPEED_TEST_URL, la
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Override] v0.7.3 | Raw Proxies: ${config.proxies?.length || 0}`);
+  console.log(`[Override] v0.7.4 | Raw Proxies: ${config.proxies?.length || 0}`);
 
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
   config.tun = { enable: true, stack: "system", "auto-route": true, "auto-detect-interface": true, "dns-hijack": ["any:53"], "strict-route": true, mtu: 1500 };
   
-  // Fixed: Pure integer port arrays to prevent FlClash Android intRanges error
   config.sniffer = { 
     enable: true, 
     "parse-pure-ip": false, 
@@ -94,7 +92,6 @@ function main(config) {
 
   if (config.proxies?.length) {
     config.proxies = config.proxies.filter(p => p?.name && !CONFIG.FILTER_KEYWORDS.some(k => p.name.includes(k)));
-    config.proxies = config.proxies.slice(0, CONFIG.MAX_NODES);
     config.proxies.forEach(p => {
       if (!p?.type) return;
       p.udp = true;
@@ -102,6 +99,6 @@ function main(config) {
     });
   }
 
-  console.log(`[Override] v0.7.3 | Valid Nodes: ${config.proxies?.length || 0} | DNS:${dnsConfig.listen}`);
+  console.log(`[Override] v0.7.4 | Valid Nodes: ${config.proxies?.length || 0} | DNS:${dnsConfig.listen}`);
   return config;
 }
