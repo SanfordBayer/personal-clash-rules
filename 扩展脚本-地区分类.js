@@ -68,7 +68,6 @@ function main(config) {
     { ...baseGroup, name: "节点选择", type: "select", proxies: ["延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "新加坡-自动", "其他地区", "DIRECT"], "include-all": true, filter: safeFilter },
     { ...baseGroup, name: "延迟选优", type: "url-test", "include-all": true, filter: safeFilter },
     { ...baseGroup, name: "故障转移", type: "fallback", "include-all": true, filter: safeFilter },
-    // Fixed: Hardcode fallback proxy "节点选择" to prevent empty group error
     { name: "PikPak", type: "select", "include-all": true, proxies: ["新加坡-自动", "节点选择", "延迟选优", "故障转移", "香港-自动", "美国-自动", "台湾-自动", "日本-自动", "其他地区", "DIRECT"], filter: safeFilter },
     { name: "Telegram", type: "select", "include-all": true, proxies: ["新加坡-自动", "美国-自动", "节点选择", "延迟选优", "故障转移", "香港-自动", "台湾-自动", "日本-自动", "其他地区", "DIRECT"], filter: safeFilter },
     { ...baseGroup, name: "香港-自动", type: "url-test", "include-all": true, filter: regionRe("hk") },
@@ -119,7 +118,6 @@ function main(config) {
     });
   }
 
-  // Debug: Log created groups for verification
   const groupNames = config["proxy-groups"]?.map(g => g.name) || [];
   console.log(`[Override] Created Groups: ${groupNames.join(", ")}`);
   console.log(`[Override] v0.8.3 | Valid Nodes: ${config.proxies?.length || 0} | DNS:${dnsConfig.listen}`);
