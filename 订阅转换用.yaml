@@ -1,21 +1,52 @@
-# Clash Config v0.9.1 - Production Ready
-
 mixed-port: 7890
 allow-lan: true
 mode: rule
 log-level: info
 ipv6: true
+
 tcp-concurrent: true
 
-# ================= DNS =================
+tun:
+  enable: true
+  stack: system
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+    - 0.0.0.0:53
+  strict-route: true
+  mtu: 1500
+
+sniffer:
+  enable: true
+  parse-pure-ip: false
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+    HTTP:
+      ports: [80, 8080, 8443]
+      override-destination: true
+    QUIC:
+      ports: [443, 8443]
+
 dns:
   enable: true
-  listen: 0.0.0.0:1054
+  listen: 0.0.0.0:1055
   ipv6: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-ipv6: true
   fake-ip-range6: fdfe:dcba:9876::/64
+  respect-rules: true
+
+  fake-ip-filter:
+    - "+.lan"
+    - "+.local"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "localhost.ptlogin2.qq.com"
+    - "time.*.com"
 
   default-nameserver:
     - 223.5.5.5
@@ -38,52 +69,20 @@ dns:
 
   fallback:
     - https://1.1.1.1/dns-query
+    - https://8.8.4.4/dns-query
 
   fallback-filter:
     geoip: true
     geoip-code: CN
 
   nameserver-policy:
-    "geosite:cn,private":
+    geosite:cn,private:
       - https://223.5.5.5/dns-query
       - https://doh.pub/dns-query
-    "geosite:geolocation-!cn":
+    geosite:geolocation-!cn:
       - https://1.1.1.1/dns-query
       - https://8.8.4.4/dns-query
 
-  fake-ip-filter:
-    - "+.lan"
-    - "+.local"
-    - "+.msftconnecttest.com"
-    - "+.msftncsi.com"
-    - "localhost.ptlogin2.qq.com"
-    - "time.*.com"
-
-# ================= TUN =================
-tun:
-  enable: true
-  stack: system
-  auto-route: true
-  auto-detect-interface: true
-  dns-hijack:
-    - any:53
-  strict-route: true
-
-# ================= SNIFFER =================
-sniffer:
-  enable: true
-  force-dns-mapping: true
-  sniff:
-    TLS:
-      ports: [443, 8443]
-      override-destination: true
-    HTTP:
-      ports: [80, 8080, 8443]
-      override-destination: true
-    QUIC:
-      ports: [443, 8443]
-
-# ================= RULE PROVIDERS =================
 rule-providers:
   reject:
     type: http
@@ -127,7 +126,6 @@ rule-providers:
     url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
     interval: 86400
 
-# ================= PROXY GROUPS =================
 proxy-groups:
   - name: 节点选择
     type: select
@@ -146,12 +144,18 @@ proxy-groups:
     type: url-test
     url: https://www.gstatic.com/generate_204
     interval: 300
-    tolerance: 200
 
   - name: 故障转移
     type: fallback
     url: https://www.gstatic.com/generate_204
     interval: 300
+
+  - name: PikPak
+    type: select
+    proxies:
+      - 新加坡-自动
+      - 节点选择
+      - DIRECT
 
   - name: Telegram
     type: select
@@ -161,42 +165,30 @@ proxy-groups:
       - 节点选择
       - DIRECT
 
-  - name: PikPak
-    type: select
-    proxies:
-      - 新加坡-自动
-      - 节点选择
-      - DIRECT
-
   - name: 香港-自动
     type: url-test
     url: https://www.gstatic.com/generate_204
     interval: 300
-    filter: "(?=.*(香港|HK|Hong Kong|🇭🇰)).*"
 
   - name: 美国-自动
     type: url-test
     url: https://www.gstatic.com/generate_204
     interval: 300
-    filter: "(?=.*(美国|US|United States|🇺🇸)).*"
 
   - name: 台湾-自动
     type: url-test
     url: https://www.gstatic.com/generate_204
     interval: 300
-    filter: "(?=.*(台湾|TW|Tai Wan|🇹🇼)).*"
 
   - name: 日本-自动
     type: url-test
     url: https://www.gstatic.com/generate_204
     interval: 300
-    filter: "(?=.*(日本|JP|Japan|🇯🇵)).*"
 
   - name: 新加坡-自动
     type: url-test
     url: https://www.gstatic.com/generate_204
     interval: 300
-    filter: "(?=.*(新加坡|SG|Singapore|🇸🇬)).*"
 
   - name: 其他地区
     type: url-test
@@ -219,39 +211,35 @@ proxy-groups:
     type: select
     proxies:
       - 节点选择
+      - 延迟选优
       - 全局直连
 
-# ================= RULES =================
 rules:
-  # QUIC (overseas)
-  - AND,((NETWORK,UDP),(DST-PORT,443),(NOT,(GEOIP,CN))),REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
 
-  # PROCESS
   - PROCESS-NAME,Telegram.exe,Telegram
   - PROCESS-NAME,Updater.exe,Telegram
   - PROCESS-NAME,PikPak.exe,PikPak
+  - PROCESS-NAME,com.pikpak.app,PikPak
 
-  # RULE SET
   - RULE-SET,reject,全局拦截
   - RULE-SET,pikpak,PikPak
 
-  # Telegram
   - DOMAIN-SUFFIX,telegram.org,Telegram
   - DOMAIN-SUFFIX,telegram.me,Telegram
   - DOMAIN-KEYWORD,telegram,Telegram
   - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
+  - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
   - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
 
-  # Proxy
   - RULE-SET,proxy,节点选择
   - RULE-SET,gfw,节点选择
 
-  # Direct
   - RULE-SET,direct,全局直连
   - RULE-SET,lancidr,全局直连,no-resolve
   - RULE-SET,cncidr,全局直连,no-resolve
+
   - GEOIP,LAN,全局直连,no-resolve
   - GEOIP,CN,全局直连,no-resolve
 
-  # Final
   - MATCH,漏网之鱼
