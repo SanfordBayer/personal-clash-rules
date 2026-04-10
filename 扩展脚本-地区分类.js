@@ -1,4 +1,4 @@
-// Clash Override v0.9.15 | Group Display Order Fix & Safe Forward Reference
+// Clash Override v0.9.16 | DNS Config Optimization + Zero Regression
 const CONFIG = {
   PRESET: "balanced",
   DEBUG: false,
@@ -45,25 +45,34 @@ const regionRegex = {
 const domesticNS = ["https://223.5.5.5/dns-query","https://doh.pub/dns-query"];
 const foreignNS = ["https://1.1.1.1/dns-query","https://8.8.4.4/dns-query"];
 
-// ===== DNS Configuration (Full) =====
+// ===== DNS Configuration (v0.9.16 Optimized) =====
 const dnsConfig = {
   enable: true,
   listen: `0.0.0.0:${CONFIG.DNS_PORT}`,
   ipv6: CONFIG.DNS_IPV6,
+  "filter-aaaa": true,  // ✅ 新增：过滤无效 AAAA 记录
   "enhanced-mode": "fake-ip",
   "fake-ip-range": "198.18.0.1/16",
   "fake-ip-ipv6": CONFIG.FAKE_IP_V6,
   "fake-ip-range6": CONFIG.FAKE_IP_V6_RANGE,
-  "respect-rules": true,
+  "respect-rules": true,  // ✅ 核心防泄露
   "fake-ip-filter": [
     "+.lan","+.local","+.msftconnecttest.com","+.msftncsi.com",
-    "localhost.ptlogin2.qq.com","time.*.com"
+    "localhost.ptlogin2.qq.com","time.*.com","stun.*.*",
+    "+.srv.nintendo.net","+.stun.playstation.net","+.xboxlive.com",
+    "music.163.com","+.music.163.com","+.126.net","+.kuwo.cn",
+    "+.y.qq.com","+.music.migu.cn","+.xiami.com"
   ],
+  // ✅ 精简 nameserver 角色：仅作为备用，主路由交给 nameserver-policy
   "default-nameserver": ["223.5.5.5","119.29.29.29","2400:3200::1"],
-  nameserver: [...foreignNS],
-  "proxy-server-nameserver": [...domesticNS],
-  "direct-nameserver": [...domesticNS],
-  "direct-nameserver-follow-policy": true,
+  nameserver: ["https://dns.alidns.com/dns-query"],
+  // ✅ 混合策略保留：优先 DoH，直连 DNS 兜底
+  "proxy-server-nameserver": [
+    "https://doh.pub/dns-query",
+    "https://dns.alidns.com/dns-query",
+    "223.5.5.5",
+    "119.29.29.29"
+  ],
   fallback: [...foreignNS],
   "fallback-filter": { geoip: true, "geoip-code": "CN" },
   "nameserver-policy": {
@@ -102,7 +111,7 @@ function scoreNode(name, type){
 
 function main(config){
   if(!config || typeof config !== "object") return config;
-  console.log(`[Override] v0.9.15 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Override] v0.9.16 start | preset:${CONFIG.PRESET}`);
 
   // ===== Core Stack =====
   config.ipv6 = CONFIG.DNS_IPV6;
@@ -152,8 +161,6 @@ function main(config){
   const otherFilter = `^(?!.*(${Object.values(regionStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
 
   const groups = [];
-  
-  // Pre-define regional labels for safe forward reference in app groups
   const regionalLabels = CONFIG.ENABLE_REGIONAL_GROUPS
     ? ["新加坡-自动","香港-自动","日本-自动","美国-自动","台湾-自动","其他地区"]
     : [];
@@ -214,9 +221,9 @@ function main(config){
   config.rules = rules;
 
   // ===== Structured Debug Report =====
-  console.log(`[Override] v0.9.15 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  console.log(`[Override] v0.9.16 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if(CONFIG.DEBUG){
-    console.log(`[Debug] === v0.9.15 Report ===`);
+    console.log(`[Debug] === v0.9.16 Report ===`);
     console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_TELEGRAM_ROUTING} | PK=${CONFIG.ENABLE_PAKPAK_ROUTING} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS} | QUIC=${CONFIG.BLOCK_QUIC}`);
     console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
     console.log(`[Debug] Top 3:`, config.proxies.slice(0,3).map(p=>p.name).join(", "));
