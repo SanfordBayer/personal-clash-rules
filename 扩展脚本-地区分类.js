@@ -1,6 +1,6 @@
-// Clash Override v0.9.11 | Preset System + Zero Regression (Pure JS)
+// Clash Override v0.9.12 | Modular Switches + Debug Report + Safe Fallback
 const CONFIG = {
-  PRESET: "balanced", // minimal | balanced | full (balanced=full for now)
+  PRESET: "balanced",
   DEBUG: false,
   ENABLE_SMART_SORT: true,
 
@@ -15,15 +15,7 @@ const CONFIG = {
   FILTER_KEYWORDS: ["官网","套餐","流量","异常","剩余","过期","失效","维护","高倍","倍率","测试","Test","备用"],
 
   REGION_WEIGHTS: { sg: 40, hk: 30, jp: 25, us: 20, tw: 20 },
-  PROTOCOL_WEIGHTS: {
-    hysteria2: 40,
-    hysteria: 35,
-    tuic: 30,
-    trojan: 25,
-    vmess: 20,
-    vless: 20,
-    ss: 10
-  },
+  PROTOCOL_WEIGHTS: { hysteria2: 40, hysteria: 35, tuic: 30, trojan: 25, vmess: 20, vless: 20, ss: 10 },
 
   SPEED_TEST_URL: "https://www.gstatic.com/generate_204",
   RULE_BASE_URL: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release",
@@ -31,7 +23,12 @@ const CONFIG = {
 
   BLOCK_QUIC: "overseas",
   ENABLE_PROCESS_RULES: true,
-  AUTO_VALIDATE: true
+  AUTO_VALIDATE: true,
+
+  // 🆕 v0.9.12 Modular Feature Switches (Default true = Zero Regression)
+  ENABLE_TELEGRAM_ROUTING: true,
+  ENABLE_PAKPAK_ROUTING: true,
+  ENABLE_REGIONAL_GROUPS: true
 };
 
 // ===== Precompiled Regex =====
@@ -49,7 +46,7 @@ const regionRegex = {
 const domesticNS = ["https://223.5.5.5/dns-query","https://doh.pub/dns-query"];
 const foreignNS = ["https://1.1.1.1/dns-query","https://8.8.4.4/dns-query"];
 
-// ===== DNS Configuration (Full, Zero Regression) =====
+// ===== DNS Configuration (Full) =====
 const dnsConfig = {
   enable: true,
   listen: `0.0.0.0:${CONFIG.DNS_PORT}`,
@@ -60,12 +57,9 @@ const dnsConfig = {
   "fake-ip-range6": CONFIG.FAKE_IP_V6_RANGE,
   "respect-rules": true,
   "fake-ip-filter": [
-    "+.lan",
-    "+.local",
-    "+.msftconnecttest.com",
-    "+.msftncsi.com",
-    "localhost.ptlogin2.qq.com",
-    "time.*.com"
+    "+.lan","+ .local".replace(" ",""),
+    "+.msftconnecttest.com","+.msftncsi.com",
+    "localhost.ptlogin2.qq.com","time.*.com"
   ],
   "default-nameserver": ["223.5.5.5","119.29.29.29","2400:3200::1"],
   nameserver: [...foreignNS],
@@ -80,7 +74,6 @@ const dnsConfig = {
   }
 };
 
-// ===== Rule Providers (Full, Including PikPak) =====
 const ruleUrl = n => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
 const ruleProviders = {
   reject:{type:"http",format:"yaml",interval:CONFIG.RULE_UPDATE_INTERVAL,behavior:"domain",url:ruleUrl("reject")},
@@ -92,19 +85,12 @@ const ruleProviders = {
   lancidr:{type:"http",format:"yaml",interval:CONFIG.RULE_UPDATE_INTERVAL,behavior:"ipcidr",url:ruleUrl("lancidr")}
 };
 
-// ===== Scoring Function (Priority-Based, No Double-Counting) =====
+// ===== Scoring Function =====
 function scoreNode(name, type){
   let score = 0;
-
-  // Region scoring (priority match + break)
   for(let k in regionRegex){
-    if(regionRegex[k].test(name)){
-      score += CONFIG.REGION_WEIGHTS[k] || 0;
-      break;
-    }
+    if(regionRegex[k].test(name)){ score += CONFIG.REGION_WEIGHTS[k] || 0; break; }
   }
-
-  // Protocol scoring (if/else chain)
   const t = (type || "").toLowerCase();
   if(/hysteria2|hy2/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.hysteria2;
   else if(/hysteria/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.hysteria;
@@ -113,176 +99,119 @@ function scoreNode(name, type){
   else if(/vmess/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.vmess;
   else if(/vless/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.vless;
   else if(/^ss$|shadowsocks/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.ss;
-
   return score;
 }
 
 function main(config){
   if(!config || typeof config !== "object") return config;
-
-  console.log(`[Override] v0.9.11 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Override] v0.9.12 start | preset:${CONFIG.PRESET}`);
 
   // ===== Core Stack =====
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
-
-  // ===== TUN (Full Config) =====
-  config.tun = {
-    enable: true,
-    stack: "system",
-    "auto-route": true,
-    "auto-detect-interface": true,
-    "dns-hijack": ["0.0.0.0:53"],
-    "strict-route": true,
-    mtu: 1500
-  };
-
-  // ===== Sniffer (Full Config) =====
-  config.sniffer = {
-    enable: true,
-    "parse-pure-ip": false,
-    "force-dns-mapping": true,
-    sniff: {
-      TLS:{ports:[443,8443],"override-destination":true},
-      HTTP:{ports:[80,8080,8443],"override-destination":true},
-      QUIC:{ports:[443,8443]}
-    }
-  };
-
+  config.tun = { enable:true, stack:"system", "auto-route":true, "auto-detect-interface":true, "dns-hijack":["0.0.0.0:53"], "strict-route":true, mtu:1500 };
+  config.sniffer = { enable:true, "parse-pure-ip":false, "force-dns-mapping":true, sniff:{ TLS:{ports:[443,8443],"override-destination":true}, HTTP:{ports:[80,8080,8443],"override-destination":true}, QUIC:{ports:[443,8443]} } };
   config.dns = dnsConfig;
   config["rule-providers"] = ruleProviders;
 
   // ===== Node Processing =====
-  if(!Array.isArray(config.proxies)){
-    console.warn("[Override] proxies invalid");
+  if(!Array.isArray(config.proxies) || config.proxies.length === 0){
+    console.warn("[Override] proxies invalid/empty. Injecting safe fallback config.");
+    config["proxy-groups"] = [{ name:"节点选择", type:"select", proxies:["DIRECT"] }];
+    config.rules = ["MATCH,DIRECT"];
+    config.proxies = [];
     return config;
   }
 
-  const regionStats = { sg:0,hk:0,jp:0,us:0,tw:0 };
+  const regionStats = { sg:0, hk:0, jp:0, us:0, tw:0 };
 
   config.proxies = config.proxies.filter(p => {
     if(!p?.name || !p?.type) return false;
     if(keywordRegex.test(p.name)) return false;
     if(excludeRegex.test(p.name)) return false;
-
-    // Region stats collection (deduplicated)
-    for(let k in regionRegex){
-      if(regionRegex[k].test(p.name)){
-        regionStats[k]++;
-        break;
-      }
-    }
+    for(let k in regionRegex){ if(regionRegex[k].test(p.name)){ regionStats[k]++; break; } }
     return true;
   });
 
-  // Smart sort (optional)
-  if(CONFIG.ENABLE_SMART_SORT){
-    config.proxies.sort((a,b) => scoreNode(b.name,b.type) - scoreNode(a.name,a.type));
+  // 🛡️ Safe Fallback: If filtering removes all nodes
+  if(config.proxies.length === 0){
+    console.warn("[Override] All nodes filtered out. Injecting safe fallback config.");
+    config["proxy-groups"] = [{ name:"节点选择", type:"select", proxies:["DIRECT"] }];
+    config.rules = ["MATCH,DIRECT"];
+    return config;
   }
 
-  // Protocol enhance
-  config.proxies.forEach(p => {
+  if(CONFIG.ENABLE_SMART_SORT) config.proxies.sort((a,b)=>scoreNode(b.name,b.type)-scoreNode(a.name,a.type));
+
+  config.proxies.forEach(p=>{
     p.udp = true;
-    if(CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|hysteria2|tuic/i.test(p.type)){
-      p.xudp = true;
-    }
+    if(CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|hysteria2|tuic/i.test(p.type)) p.xudp = true;
   });
 
-  // ===== Proxy Groups (Full 13 Groups, Zero Regression) =====
-  const baseGroup = { interval:300,timeout:5000,url:CONFIG.SPEED_TEST_URL,lazy:true,"max-failed-times":5,tolerance:200 };
+  // ===== Dynamic Groups Builder =====
+  const baseGroup = { interval:300, timeout:5000, url:CONFIG.SPEED_TEST_URL, lazy:true, "max-failed-times":5, tolerance:200 };
   const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
-  const regionStr = {
-    hk:"香港|HK|Hong Kong|🇭🇰",
-    us:"美国|US|United States|🇺🇸",
-    tw:"台湾|TW|Tai Wan|🇹🇼",
-    jp:"日本|JP|Japan|🇯🇵",
-    sg:"新加坡|SG|Singapore|🇸🇬"
-  };
-  const regionRe = k => `(?=.*(${regionStr[k]})).*$`;
-  const otherFilter = `^(?!.*(${Object.values(regionStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
+  let groups = [];
 
-  // PRESET system: balanced/full = full feature, minimal = simplified (documented)
-  if(CONFIG.PRESET === "minimal"){
-    config["proxy-groups"] = [
-      { ...baseGroup,name:"自动选择",type:"url-test","include-all":true,filter:safeFilter },
-      { name:"手动选择",type:"select","include-all":true,filter:safeFilter,proxies:["自动选择","DIRECT"] },
-      { name:"全局直连",type:"select",proxies:["DIRECT","手动选择"] },
-      { name:"全局拦截",type:"select",proxies:["REJECT","DIRECT"] },
-      { name:"漏网之鱼",type:"select",proxies:["手动选择","全局直连"] }
-    ];
-  } else {
-    // balanced/full = identical to v0.9.8 (zero regression)
-    config["proxy-groups"] = [
-      { ...baseGroup,name:"节点选择",type:"select",proxies:["延迟选优","故障转移","香港-自动","美国-自动","台湾-自动","日本-自动","新加坡-自动","其他地区","DIRECT"],"include-all":true,filter:safeFilter },
-      { ...baseGroup,name:"延迟选优",type:"url-test","include-all":true,filter:safeFilter },
-      { ...baseGroup,name:"故障转移",type:"fallback","include-all":true,filter:safeFilter },
-      { name:"PikPak",type:"select","include-all":true,proxies:["新加坡-自动","节点选择","DIRECT"],filter:safeFilter },
-      { name:"Telegram",type:"select","include-all":true,proxies:["新加坡-自动","美国-自动","节点选择","DIRECT"],filter:safeFilter },
-      { ...baseGroup,name:"香港-自动",type:"url-test","include-all":true,filter:regionRe("hk") },
-      { ...baseGroup,name:"美国-自动",type:"url-test","include-all":true,filter:regionRe("us") },
-      { ...baseGroup,name:"台湾-自动",type:"url-test","include-all":true,filter:regionRe("tw") },
-      { ...baseGroup,name:"日本-自动",type:"url-test","include-all":true,filter:regionRe("jp") },
-      { ...baseGroup,name:"新加坡-自动",type:"url-test","include-all":true,filter:regionRe("sg") },
-      { ...baseGroup,name:"其他地区",type:"url-test","include-all":true,filter:otherFilter },
-      { name:"全局直连",type:"select",proxies:["DIRECT","节点选择"] },
-      { name:"全局拦截",type:"select",proxies:["REJECT","DIRECT"] },
-      { name:"漏网之鱼",type:"select",proxies:["节点选择","延迟选优","全局直连"] }
-    ];
+  // Core groups
+  groups.push({ ...baseGroup, name:"延迟选优", type:"url-test", "include-all":true, filter:safeFilter });
+  groups.push({ ...baseGroup, name:"故障转移", type:"fallback", "include-all":true, filter:safeFilter });
+
+  // Regional logic
+  let mainProxies = ["延迟选优","故障转移","DIRECT"];
+  if(CONFIG.ENABLE_REGIONAL_GROUPS){
+    const regionStr = { hk:"香港|HK|Hong Kong|🇭🇰", us:"美国|US|United States|🇺🇸", tw:"台湾|TW|Tai Wan|🇹🇼", jp:"日本|JP|Japan|🇯🇵", sg:"新加坡|SG|Singapore|🇸🇬" };
+    const regionRe = k => `(?=.*(${regionStr[k]})).*$`;
+    const otherFilter = `^(?!.*(${Object.values(regionStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
+    mainProxies = ["延迟选优","故障转移","香港-自动","美国-自动","台湾-自动","日本-自动","新加坡-自动","其他地区","DIRECT"];
+
+    ["hk","us","tw","jp","sg"].forEach(k => groups.push({ ...baseGroup, name:`${regionStr[k].split("|")[0]}-自动`, type:"url-test", "include-all":true, filter:regionRe(k) }));
+    groups.push({ ...baseGroup, name:"其他地区", type:"url-test", "include-all":true, filter:otherFilter });
   }
 
-  // ===== Rules (Full Chain, Zero Regression) =====
-  const rules = [];
+  // App routing groups
+  if(CONFIG.ENABLE_PAKPAK_ROUTING) groups.push({ name:"PikPak", type:"select", "include-all":true, proxies:["新加坡-自动","节点选择","DIRECT"], filter:safeFilter });
+  if(CONFIG.ENABLE_TELEGRAM_ROUTING) groups.push({ name:"Telegram", type:"select", "include-all":true, proxies:["新加坡-自动","美国-自动","节点选择","DIRECT"], filter:safeFilter });
 
-  // QUIC blocking
-  if(CONFIG.BLOCK_QUIC === "global"){
-    rules.push("AND,((NETWORK,UDP),(DST-PORT,443)),REJECT");
-  } else if(CONFIG.BLOCK_QUIC === "overseas"){
-    rules.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
+  // If regional disabled, clean up proxy references in app groups
+  if(!CONFIG.ENABLE_REGIONAL_GROUPS){
+    groups.forEach(g => { if(g.proxies) g.proxies = g.proxies.map(p => p.includes("-自动") || p==="其他地区" ? "节点选择" : p); });
   }
 
-  // Process rules (cross-platform)
+  // Inject 节点选择 at top, control groups at bottom
+  groups.unshift({ ...baseGroup, name:"节点选择", type:"select", proxies:mainProxies, "include-all":true, filter:safeFilter });
+  groups.push({ name:"全局直连", type:"select", proxies:["DIRECT","节点选择"] });
+  groups.push({ name:"全局拦截", type:"select", proxies:["REJECT","DIRECT"] });
+  groups.push({ name:"漏网之鱼", type:"select", proxies:["节点选择","延迟选优","全局直连"] });
+  config["proxy-groups"] = groups;
+
+  // ===== Dynamic Rules Builder =====
+  let rules = [];
+  if(CONFIG.BLOCK_QUIC === "global") rules.push("AND,((NETWORK,UDP),(DST-PORT,443)),REJECT");
+  else if(CONFIG.BLOCK_QUIC === "overseas") rules.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
+
   if(CONFIG.ENABLE_PROCESS_RULES){
-    rules.push(
-      "PROCESS-NAME,Telegram.exe,Telegram",
-      "PROCESS-NAME,Updater.exe,Telegram",
-      "PROCESS-NAME,PikPak.exe,PikPak",
-      "PROCESS-NAME,com.pikpak.app,PikPak"
-    );
+    rules.push("PROCESS-NAME,Telegram.exe,Telegram","PROCESS-NAME,Updater.exe,Telegram","PROCESS-NAME,PikPak.exe,PikPak","PROCESS-NAME,com.pikpak.app,PikPak");
   }
 
-  // Core rule chain (priority order)
-  rules.push(
-    "RULE-SET,reject,全局拦截",
-    "RULE-SET,pikpak,PikPak",
+  rules.push("RULE-SET,reject,全局拦截");
+  if(CONFIG.ENABLE_PAKPAK_ROUTING) rules.push("RULE-SET,pikpak,PikPak");
 
-    "DOMAIN-SUFFIX,telegram.org,Telegram",
-    "DOMAIN-SUFFIX,telegram.me,Telegram",
-    "DOMAIN-KEYWORD,telegram,Telegram",
-    "IP-CIDR,91.108.0.0/16,Telegram,no-resolve",
-    "IP-CIDR,149.154.160.0/20,Telegram,no-resolve",
-    "IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve",
+  if(CONFIG.ENABLE_TELEGRAM_ROUTING){
+    rules.push("DOMAIN-SUFFIX,telegram.org,Telegram","DOMAIN-SUFFIX,telegram.me,Telegram","DOMAIN-KEYWORD,telegram,Telegram","IP-CIDR,91.108.0.0/16,Telegram,no-resolve","IP-CIDR,149.154.160.0/20,Telegram,no-resolve","IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve");
+  }
 
-    "RULE-SET,proxy,节点选择",
-    "RULE-SET,gfw,节点选择",
-
-    "RULE-SET,direct,全局直连",
-    "RULE-SET,lancidr,全局直连,no-resolve",
-    "RULE-SET,cncidr,全局直连,no-resolve",
-
-    "GEOIP,LAN,全局直连,no-resolve",
-    "GEOIP,CN,全局直连,no-resolve",
-
-    "MATCH,漏网之鱼"
-  );
-
+  rules.push("RULE-SET,proxy,节点选择","RULE-SET,gfw,节点选择","RULE-SET,direct,全局直连","RULE-SET,lancidr,全局直连,no-resolve","RULE-SET,cncidr,全局直连,no-resolve","GEOIP,LAN,全局直连,no-resolve","GEOIP,CN,全局直连,no-resolve","MATCH,漏网之鱼");
   config.rules = rules;
 
-  // ===== Logging =====
-  console.log(`[Override] v0.9.11 | Nodes:${config.proxies.length} | Rules:${rules.length}`);
-
+  // ===== Structured Debug Report =====
+  console.log(`[Override] v0.9.12 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if(CONFIG.DEBUG){
-    console.log(`[Debug] Region Stats:`, regionStats);
-    console.log(`[Debug] First 3 nodes:`, config.proxies.slice(0,3).map(p=>p.name));
+    console.log(`[Debug] === v0.9.12 Report ===`);
+    console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_TELEGRAM_ROUTING} | PK=${CONFIG.ENABLE_PAKPAK_ROUTING} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS} | QUIC=${CONFIG.BLOCK_QUIC}`);
+    console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
+    console.log(`[Debug] Top 3:`, config.proxies.slice(0,3).map(p=>p.name).join(", "));
+    console.log(`[Debug] ======================`);
   }
 
   return config;
