@@ -1,35 +1,42 @@
-// Clash Override v0.9.5 | Smart Sort + Local Fallback (Pure JS, Zero Regression)
+// Clash Override v0.9.6 | Full Version (Fixed + Complete)
 
 const CONFIG = {
   DNS_PORT: 1055,
   DNS_IPV6: true,
   FAKE_IP_V6: true,
   FAKE_IP_V6_RANGE: "fdfe:dcba:9876::/64",
-
   TCP_CONCURRENT: true,
   XUDP_SAFE_MODE: true,
 
-  // ⭐ v0.9.5 NEW
-  ENABLE_SMART_SORT: true,   // 可关闭
-  DEBUG: false,
-
-  FILTER_KEYWORDS: [
-    "官网","套餐","流量","异常","剩余","过期","失效","维护",
-    "高倍","倍率","测试","Test","备用"
-  ],
+  FILTER_KEYWORDS: ["官网","套餐","流量","异常","剩余","过期","失效","维护","高倍","倍率","测试","Test","备用"],
 
   SPEED_TEST_URL: "https://www.gstatic.com/generate_204",
   RULE_BASE_URL: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release",
   RULE_UPDATE_INTERVAL: 86400,
 
   BLOCK_QUIC: "overseas",
-  ENABLE_PROCESS_RULES: true
+
+  AUTO_VALIDATE: true,
+  ENABLE_PROCESS_RULES: true,
+  ENABLE_SMART_SORT: true,
+
+  REGION_WEIGHTS: { sg:40, jp:25, us:20, hk:15, tw:10 },
+  PROTOCOL_WEIGHTS: {
+    hysteria2: 40,
+    hysteria: 35,
+    tuic: 30,
+    trojan: 25,
+    vmess: 20,
+    vless: 20
+  },
+
+  DEBUG: false
 };
 
+// DNS
 const domesticNS = ["https://223.5.5.5/dns-query","https://doh.pub/dns-query"];
 const foreignNS = ["https://1.1.1.1/dns-query","https://8.8.4.4/dns-query"];
 
-// ================= DNS =================
 const dnsConfig = {
   enable: true,
   listen: `0.0.0.0:${CONFIG.DNS_PORT}`,
@@ -60,7 +67,6 @@ const dnsConfig = {
   }
 };
 
-// ================= RULE PROVIDERS =================
 const ruleUrl = n => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
 
 const ruleProviders = {
@@ -73,29 +79,34 @@ const ruleProviders = {
   lancidr:{ type:"http",format:"yaml",interval:CONFIG.RULE_UPDATE_INTERVAL,behavior:"ipcidr",url:ruleUrl("lancidr") }
 };
 
-// ================= SMART SORT (v0.9.5) =================
-function scoreNode(name, type) {
+// ⭐ 修复：协议优先匹配避免双计分
+function scoreNode(name="", type="") {
   let score = 0;
+  const n = name.toLowerCase();
+  const t = type.toLowerCase();
 
-  // 地区偏好
-  if (/新加坡|SG|Singapore/i.test(name)) score += 30;
-  if (/日本|JP|Japan/i.test(name)) score += 20;
-  if (/美国|US|United/i.test(name)) score += 15;
+  if (/sg|singapore/.test(n)) score += CONFIG.REGION_WEIGHTS.sg;
+  if (/jp|japan/.test(n)) score += CONFIG.REGION_WEIGHTS.jp;
+  if (/us|united states/.test(n)) score += CONFIG.REGION_WEIGHTS.us;
+  if (/hk|hong kong/.test(n)) score += CONFIG.REGION_WEIGHTS.hk;
+  if (/tw|taiwan/.test(n)) score += CONFIG.REGION_WEIGHTS.tw;
 
-  // 协议优先级
-  if (/hysteria2|hy2|tuic/i.test(type)) score += 40;
-  else if (/hysteria/i.test(type)) score += 30;
-  else if (/trojan/i.test(type)) score += 20;
-  else if (/vmess|vless/i.test(type)) score += 10;
+  if (/hysteria2|hy2/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.hysteria2;
+  else if (/hysteria/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.hysteria;
+  else if (/tuic/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.tuic;
+  else if (/trojan/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.trojan;
+  else if (/vmess/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.vmess;
+  else if (/vless/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.vless;
+
+  if (/iepl|iplc|专线/.test(n)) score += 20;
 
   return score;
 }
 
-// ================= MAIN =================
 function main(config) {
   if (!config || typeof config !== "object") return config;
 
-  console.log(`[Override] v0.9.5 start`);
+  console.log(`[Override] v0.9.6 start`);
 
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
@@ -115,21 +126,21 @@ function main(config) {
     "parse-pure-ip": false,
     "force-dns-mapping": true,
     sniff: {
-      TLS: { ports:[443,8443], "override-destination": true },
-      HTTP:{ ports:[80,8080,8443], "override-destination": true },
-      QUIC:{ ports:[443,8443] }
+      TLS:{ports:[443,8443],"override-destination":true},
+      HTTP:{ports:[80,8080,8443],"override-destination":true},
+      QUIC:{ports:[443,8443]}
     }
   };
 
   config.dns = dnsConfig;
   config["rule-providers"] = ruleProviders;
 
+  // ===== 节点处理 =====
   if (!Array.isArray(config.proxies)) {
     console.warn("[Override] proxies invalid");
     return config;
   }
 
-  // ========= Node Filtering =========
   config.proxies = config.proxies.filter(p => {
     if (!p?.name || !p?.type) return false;
     if (CONFIG.FILTER_KEYWORDS.some(k => p.name.includes(k))) return false;
@@ -137,14 +148,10 @@ function main(config) {
     return true;
   });
 
-  // ========= Smart Sort =========
   if (CONFIG.ENABLE_SMART_SORT) {
-    config.proxies.sort((a,b)=>{
-      return scoreNode(b.name,b.type) - scoreNode(a.name,a.type);
-    });
+    config.proxies.sort((a,b)=>scoreNode(b.name,b.type)-scoreNode(a.name,a.type));
   }
 
-  // ========= Proxy Enhance =========
   config.proxies.forEach(p => {
     p.udp = true;
     if (CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|hysteria2|tuic/i.test(p.type)) {
@@ -152,25 +159,10 @@ function main(config) {
     }
   });
 
-  // ================= GROUPS =================
-  const baseGroup = {
-    interval:300,
-    timeout:5000,
-    url:CONFIG.SPEED_TEST_URL,
-    lazy:true,
-    "max-failed-times":5,
-    tolerance:200
-  };
-
-  const regions = {
-    hk:"香港|HK|Hong Kong|🇭🇰",
-    us:"美国|US|United States|🇺🇸",
-    tw:"台湾|TW|Tai Wan|🇹🇼",
-    jp:"日本|JP|Japan|🇯🇵",
-    sg:"新加坡|SG|Singapore|🇸🇬"
-  };
-
+  // ===== 分组 =====
+  const baseGroup = { interval:300,timeout:5000,url:CONFIG.SPEED_TEST_URL,lazy:true,"max-failed-times":5,tolerance:200 };
   const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
+  const regions = { hk:"香港|HK|Hong Kong|🇭🇰", us:"美国|US|United States|🇺🇸", tw:"台湾|TW|Tai Wan|🇹🇼", jp:"日本|JP|Japan|🇯🇵", sg:"新加坡|SG|Singapore|🇸🇬" };
   const regionRe = k => `(?=.*(${regions[k]})).*$`;
   const otherFilter = `^(?!.*(${Object.values(regions).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
 
@@ -178,7 +170,6 @@ function main(config) {
     { ...baseGroup,name:"节点选择",type:"select",proxies:["延迟选优","故障转移","香港-自动","美国-自动","台湾-自动","日本-自动","新加坡-自动","其他地区","DIRECT"],"include-all":true,filter:safeFilter },
     { ...baseGroup,name:"延迟选优",type:"url-test","include-all":true,filter:safeFilter },
     { ...baseGroup,name:"故障转移",type:"fallback","include-all":true,filter:safeFilter },
-
     { name:"PikPak",type:"select","include-all":true,proxies:["新加坡-自动","节点选择","DIRECT"],filter:safeFilter },
     { name:"Telegram",type:"select","include-all":true,proxies:["新加坡-自动","美国-自动","节点选择","DIRECT"],filter:safeFilter },
 
@@ -194,17 +185,15 @@ function main(config) {
     { name:"漏网之鱼",type:"select",proxies:["节点选择","延迟选优","全局直连"] }
   ];
 
-  // ================= RULES =================
+  // ===== 规则 =====
   let rules = [];
 
-  // QUIC block
   if (CONFIG.BLOCK_QUIC === "global") {
     rules.push("AND,((NETWORK,UDP),(DST-PORT,443)),REJECT");
   } else if (CONFIG.BLOCK_QUIC === "overseas") {
     rules.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
   }
 
-  // PROCESS RULES
   if (CONFIG.ENABLE_PROCESS_RULES) {
     rules.push(
       "PROCESS-NAME,Telegram.exe,Telegram",
@@ -214,12 +203,10 @@ function main(config) {
     );
   }
 
-  // === Core Rules + Local Fallback ===
   rules.push(
     "RULE-SET,reject,全局拦截",
     "RULE-SET,pikpak,PikPak",
 
-    // Telegram fallback（关键兜底）
     "DOMAIN-SUFFIX,telegram.org,Telegram",
     "DOMAIN-SUFFIX,telegram.me,Telegram",
     "DOMAIN-KEYWORD,telegram,Telegram",
@@ -242,11 +229,7 @@ function main(config) {
 
   config.rules = rules;
 
-  console.log(`[Override] v0.9.5 | Nodes:${config.proxies.length} | DNS:${dnsConfig.listen}`);
-
-  if(CONFIG.DEBUG){
-    console.log(`[Debug] Rules:${config.rules.length}`);
-  }
+  console.log(`[Override] v0.9.6 | Nodes:${config.proxies.length} | Rules:${rules.length}`);
 
   return config;
 }
