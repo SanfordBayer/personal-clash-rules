@@ -1,4 +1,4 @@
-// Clash Override v0.9.14 | Group Order Optimization & Dynamic Full-Region Inheritance
+// Clash Override v0.9.15 | Group Display Order Fix & Safe Forward Reference
 const CONFIG = {
   PRESET: "balanced",
   DEBUG: false,
@@ -102,7 +102,7 @@ function scoreNode(name, type){
 
 function main(config){
   if(!config || typeof config !== "object") return config;
-  console.log(`[Override] v0.9.14 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Override] v0.9.15 start | preset:${CONFIG.PRESET}`);
 
   // ===== Core Stack =====
   config.ipv6 = CONFIG.DNS_IPV6;
@@ -144,7 +144,7 @@ function main(config){
     if(CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|hysteria2|tuic/i.test(p.type)) p.xudp = true;
   });
 
-  // ===== Dynamic Groups Builder (v0.9.14 Optimized) =====
+  // ===== Dynamic Groups Builder (v0.9.15 Order Optimized) =====
   const baseGroup = { interval:300, timeout:5000, url:CONFIG.SPEED_TEST_URL, lazy:true, "max-failed-times":5, tolerance:200 };
   const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
   const regionStr = { hk:"香港|HK|Hong Kong|🇭🇰", us:"美国|US|United States|🇺🇸", tw:"台湾|TW|Tai Wan|🇹🇼", jp:"日本|JP|Japan|🇯🇵", sg:"新加坡|SG|Singapore|🇸🇬" };
@@ -152,26 +152,18 @@ function main(config){
   const otherFilter = `^(?!.*(${Object.values(regionStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
 
   const groups = [];
-  const allRegionalLabels = [];
+  
+  // Pre-define regional labels for safe forward reference in app groups
+  const regionalLabels = CONFIG.ENABLE_REGIONAL_GROUPS
+    ? ["新加坡-自动","香港-自动","日本-自动","美国-自动","台湾-自动","其他地区"]
+    : [];
 
   // 1. Test & Fallback
   groups.push({ ...baseGroup, name:"延迟选优", type:"url-test", "include-all":true, filter:safeFilter });
   groups.push({ ...baseGroup, name:"故障转移", type:"fallback", "include-all":true, filter:safeFilter });
 
-  // 2. Regional Groups (Placed BEFORE App Groups)
-  if(CONFIG.ENABLE_REGIONAL_GROUPS){
-    const regionOrder = ["hk","us","tw","jp","sg"];
-    regionOrder.forEach(k => {
-      const label = `${regionStr[k].split("|")[0]}-自动`;
-      groups.push({ ...baseGroup, name: label, type:"url-test", "include-all":true, filter:regionRe(k) });
-      allRegionalLabels.push(label);
-    });
-    groups.push({ ...baseGroup, name:"其他地区", type:"url-test", "include-all":true, filter:otherFilter });
-    allRegionalLabels.push("其他地区");
-  }
-
-  // 3. App Routing Groups (Dynamically inherit ALL regional labels)
-  const appProxies = CONFIG.ENABLE_REGIONAL_GROUPS ? [...allRegionalLabels, "节点选择", "DIRECT"] : ["节点选择", "DIRECT"];
+  // 2. App Routing Groups (PLACED BEFORE REGIONAL GROUPS)
+  const appProxies = CONFIG.ENABLE_REGIONAL_GROUPS ? [...regionalLabels, "节点选择", "DIRECT"] : ["节点选择", "DIRECT"];
   if(CONFIG.ENABLE_TELEGRAM_ROUTING){
     groups.push({ name:"Telegram", type:"select", "include-all":true, proxies:appProxies, filter:safeFilter });
   }
@@ -179,9 +171,19 @@ function main(config){
     groups.push({ name:"PikPak", type:"select", "include-all":true, proxies:appProxies, filter:safeFilter });
   }
 
+  // 3. Regional Groups (PLACED AFTER APP GROUPS)
+  if(CONFIG.ENABLE_REGIONAL_GROUPS){
+    const regionOrder = ["hk","us","tw","jp","sg"];
+    regionOrder.forEach(k => {
+      const label = `${regionStr[k].split("|")[0]}-自动`;
+      groups.push({ ...baseGroup, name: label, type:"url-test", "include-all":true, filter:regionRe(k) });
+    });
+    groups.push({ ...baseGroup, name:"其他地区", type:"url-test", "include-all":true, filter:otherFilter });
+  }
+
   // 4. Global Node Selection (Unshifted to UI Top)
   const mainProxies = CONFIG.ENABLE_REGIONAL_GROUPS 
-    ? ["延迟选优","故障转移", ...allRegionalLabels, "DIRECT"] 
+    ? ["延迟选优","故障转移", ...regionalLabels, "DIRECT"] 
     : ["延迟选优","故障转移","DIRECT"];
   groups.unshift({ ...baseGroup, name:"节点选择", type:"select", proxies:mainProxies, "include-all":true, filter:safeFilter });
 
@@ -212,9 +214,9 @@ function main(config){
   config.rules = rules;
 
   // ===== Structured Debug Report =====
-  console.log(`[Override] v0.9.14 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  console.log(`[Override] v0.9.15 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if(CONFIG.DEBUG){
-    console.log(`[Debug] === v0.9.14 Report ===`);
+    console.log(`[Debug] === v0.9.15 Report ===`);
     console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_TELEGRAM_ROUTING} | PK=${CONFIG.ENABLE_PAKPAK_ROUTING} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS} | QUIC=${CONFIG.BLOCK_QUIC}`);
     console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
     console.log(`[Debug] Top 3:`, config.proxies.slice(0,3).map(p=>p.name).join(", "));
