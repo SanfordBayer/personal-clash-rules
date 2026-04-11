@@ -1,4 +1,4 @@
-// Clash Override v0.9.16 | DNS Config Optimization + Zero Regression
+// Clash Override v0.9.17 | WebRTC Leak Protection + Zero Regression
 const CONFIG = {
   PRESET: "balanced",
   DEBUG: false,
@@ -27,7 +27,10 @@ const CONFIG = {
 
   ENABLE_TELEGRAM_ROUTING: true,
   ENABLE_PAKPAK_ROUTING: true,
-  ENABLE_REGIONAL_GROUPS: true
+  ENABLE_REGIONAL_GROUPS: true,
+  
+  // 🆕 v0.9.17: WebRTC Leak Protection (Default OFF to avoid breaking video calls)
+  ENABLE_WEBRTC_BLOCK: false
 };
 
 // ===== Precompiled Regex =====
@@ -50,12 +53,12 @@ const dnsConfig = {
   enable: true,
   listen: `0.0.0.0:${CONFIG.DNS_PORT}`,
   ipv6: CONFIG.DNS_IPV6,
-  "filter-aaaa": true,  // ✅ 新增：过滤无效 AAAA 记录
+  "filter-aaaa": true,
   "enhanced-mode": "fake-ip",
   "fake-ip-range": "198.18.0.1/16",
   "fake-ip-ipv6": CONFIG.FAKE_IP_V6,
   "fake-ip-range6": CONFIG.FAKE_IP_V6_RANGE,
-  "respect-rules": true,  // ✅ 核心防泄露
+  "respect-rules": true,
   "fake-ip-filter": [
     "+.lan","+.local","+.msftconnecttest.com","+.msftncsi.com",
     "localhost.ptlogin2.qq.com","time.*.com","stun.*.*",
@@ -63,10 +66,8 @@ const dnsConfig = {
     "music.163.com","+.music.163.com","+.126.net","+.kuwo.cn",
     "+.y.qq.com","+.music.migu.cn","+.xiami.com"
   ],
-  // ✅ 精简 nameserver 角色：仅作为备用，主路由交给 nameserver-policy
   "default-nameserver": ["223.5.5.5","119.29.29.29","2400:3200::1"],
   nameserver: ["https://dns.alidns.com/dns-query"],
-  // ✅ 混合策略保留：优先 DoH，直连 DNS 兜底
   "proxy-server-nameserver": [
     "https://doh.pub/dns-query",
     "https://dns.alidns.com/dns-query",
@@ -111,7 +112,7 @@ function scoreNode(name, type){
 
 function main(config){
   if(!config || typeof config !== "object") return config;
-  console.log(`[Override] v0.9.16 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Override] v0.9.17 start | preset:${CONFIG.PRESET}`);
 
   // ===== Core Stack =====
   config.ipv6 = CONFIG.DNS_IPV6;
@@ -201,30 +202,67 @@ function main(config){
 
   config["proxy-groups"] = groups;
 
-  // ===== Dynamic Rules Builder =====
+  // ===== Dynamic Rules Builder (v0.9.17 WebRTC Protection) =====
   let rules = [];
-  if(CONFIG.BLOCK_QUIC === "global") rules.push("AND,((NETWORK,UDP),(DST-PORT,443)),REJECT");
-  else if(CONFIG.BLOCK_QUIC === "overseas") rules.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
+  
+  // 🆕 WebRTC Leak Protection (Highest Priority, Optional)
+  if (CONFIG.ENABLE_WEBRTC_BLOCK) {
+    rules.push(
+      "DOMAIN-KEYWORD,stun,REJECT",
+      "DOMAIN-KEYWORD,turn,REJECT",
+      "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT"
+    );
+  }
+  
+  // QUIC blocking
+  if(CONFIG.BLOCK_QUIC === "global"){
+    rules.push("AND,((NETWORK,UDP),(DST-PORT,443)),REJECT");
+  } else if(CONFIG.BLOCK_QUIC === "overseas"){
+    rules.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
+  }
 
+  // Process rules (cross-platform)
   if(CONFIG.ENABLE_PROCESS_RULES){
-    rules.push("PROCESS-NAME,Telegram.exe,Telegram","PROCESS-NAME,Updater.exe,Telegram","PROCESS-NAME,PikPak.exe,PikPak","PROCESS-NAME,com.pikpak.app,PikPak");
+    rules.push(
+      "PROCESS-NAME,Telegram.exe,Telegram",
+      "PROCESS-NAME,Updater.exe,Telegram",
+      "PROCESS-NAME,PikPak.exe,PikPak",
+      "PROCESS-NAME,com.pikpak.app,PikPak"
+    );
   }
 
-  rules.push("RULE-SET,reject,全局拦截");
-  if(CONFIG.ENABLE_PAKPAK_ROUTING) rules.push("RULE-SET,pikpak,PikPak");
+  // Core rule chain (priority order)
+  rules.push(
+    "RULE-SET,reject,全局拦截",
+    "RULE-SET,pikpak,PikPak",
 
-  if(CONFIG.ENABLE_TELEGRAM_ROUTING){
-    rules.push("DOMAIN-SUFFIX,telegram.org,Telegram","DOMAIN-SUFFIX,telegram.me,Telegram","DOMAIN-KEYWORD,telegram,Telegram","IP-CIDR,91.108.0.0/16,Telegram,no-resolve","IP-CIDR,149.154.160.0/20,Telegram,no-resolve","IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve");
-  }
+    "DOMAIN-SUFFIX,telegram.org,Telegram",
+    "DOMAIN-SUFFIX,telegram.me,Telegram",
+    "DOMAIN-KEYWORD,telegram,Telegram",
+    "IP-CIDR,91.108.0.0/16,Telegram,no-resolve",
+    "IP-CIDR,149.154.160.0/20,Telegram,no-resolve",
+    "IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve",
 
-  rules.push("RULE-SET,proxy,节点选择","RULE-SET,gfw,节点选择","RULE-SET,direct,全局直连","RULE-SET,lancidr,全局直连,no-resolve","RULE-SET,cncidr,全局直连,no-resolve","GEOIP,LAN,全局直连,no-resolve","GEOIP,CN,全局直连,no-resolve","MATCH,漏网之鱼");
+    "RULE-SET,proxy,节点选择",
+    "RULE-SET,gfw,节点选择",
+
+    "RULE-SET,direct,全局直连",
+    "RULE-SET,lancidr,全局直连,no-resolve",
+    "RULE-SET,cncidr,全局直连,no-resolve",
+
+    "GEOIP,LAN,全局直连,no-resolve",
+    "GEOIP,CN,全局直连,no-resolve",
+
+    "MATCH,漏网之鱼"
+  );
+
   config.rules = rules;
 
   // ===== Structured Debug Report =====
-  console.log(`[Override] v0.9.16 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  console.log(`[Override] v0.9.17 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if(CONFIG.DEBUG){
-    console.log(`[Debug] === v0.9.16 Report ===`);
-    console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_TELEGRAM_ROUTING} | PK=${CONFIG.ENABLE_PAKPAK_ROUTING} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS} | QUIC=${CONFIG.BLOCK_QUIC}`);
+    console.log(`[Debug] === v0.9.17 Report ===`);
+    console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_TELEGRAM_ROUTING} | PK=${CONFIG.ENABLE_PAKPAK_ROUTING} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS} | QUIC=${CONFIG.BLOCK_QUIC} | WebRTC=${CONFIG.ENABLE_WEBRTC_BLOCK}`);
     console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
     console.log(`[Debug] Top 3:`, config.proxies.slice(0,3).map(p=>p.name).join(", "));
     console.log(`[Debug] ======================`);
