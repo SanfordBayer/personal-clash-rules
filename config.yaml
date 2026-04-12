@@ -1,6 +1,3 @@
-# Full Mihomo Config v0.10.2 - For local use only
-# Do NOT use with online converters
-
 mixed-port: 7890
 allow-lan: true
 mode: rule
@@ -8,78 +5,14 @@ log-level: info
 ipv6: true
 tcp-concurrent: true
 
-# 节点占位符：客户端导入订阅后会自动填充
-proxies: []
-
-proxy-groups:
-  - name: "🚀 节点选择"
-    type: select
-    proxies: ["🇸🇬 自动优选", "🇭🇰 自动优选", "🇯🇵 自动优选", "🇺🇸 自动优选", "🇹🇼 自动优选", "🌐 其他地区", "DIRECT"]
-
-  - name: "🇸🇬 自动优选"
-    type: url-test
-    proxies: []
-    filter: "(?i)(新加坡|SG|Singapore)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "🇭🇰 自动优选"
-    type: url-test
-    proxies: []
-    filter: "(?i)(香港|HK|Hong Kong)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "🇯🇵 自动优选"
-    type: url-test
-    proxies: []
-    filter: "(?i)(日本|JP|Japan)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "🇺🇸 自动优选"
-    type: url-test
-    proxies: []
-    filter: "(?i)(美国|US|United States)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "🇹🇼 自动优选"
-    type: url-test
-    proxies: []
-    filter: "(?i)(台湾|TW|Tai Wan)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "🌐 其他地区"
-    type: url-test
-    proxies: []
-    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW)).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "Telegram"
-    type: select
-    proxies: ["🚀 节点选择", "🇸🇬 自动优选", "🇭🇰 自动优选", "🇯🇵 自动优选", "🇺🇸 自动优选", "🇹🇼 自动优选", "🌐 其他地区", "DIRECT"]
-
-  - name: "PikPak"
-    type: select
-    proxies: ["🚀 节点选择", "🇸🇬 自动优选", "🇭🇰 自动优选", "🇯🇵 自动优选", "🇺🇸 自动优选", "🇹🇼 自动优选", "🌐 其他地区", "DIRECT"]
-
-  - name: "🌐 漏网之鱼"
-    type: select
-    proxies: ["🚀 节点选择", "DIRECT"]
-
-# 以下规则与 rules.yaml 完全一致
-# Clash Meta / Mihomo Rules Fragment v0.10.2
-# For injection via subconverter &rule= parameter
-# Do NOT use as full config
+tun:
+  enable: true
+  stack: system
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack: ["0.0.0.0:53", "tcp://0.0.0.0:53"]
+  strict-route: true
+  mtu: 1500
 
 dns:
   enable: true
@@ -116,14 +49,78 @@ sniffer:
     HTTP: { ports: [80, 8080, 8443], override-destination: true }
     QUIC: { ports: [443, 8443] }
 
-rule-providers:
-  REJECT: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt", path: ./ruleset/reject.yaml, interval: 86400 }
-  PikPak: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt", path: ./ruleset/pikpak.yaml, interval: 86400 }
-  PROXY: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt", path: ./ruleset/proxy.yaml, interval: 86400 }
-  GFW: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt", path: ./ruleset/gfw.yaml, interval: 86400 }
-  DIRECT: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt", path: ./ruleset/direct.yaml, interval: 86400 }
-  LAN: { type: http, behavior: ipcidr, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt", path: ./ruleset/lancidr.yaml, interval: 86400 }
-  CN: { type: http, behavior: ipcidr, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt", path: ./ruleset/cncidr.yaml, interval: 86400 }
+proxy-groups:
+  - name: "节点选择"
+    type: select
+    proxies: []
+
+  - name: "新加坡-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(新加坡|SG|Singapore)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "香港-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(香港|HK|Hong Kong)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "日本-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(日本|JP|Japan)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "美国-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(美国|US|United States)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "台湾-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(台湾|TW|Tai Wan)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "其他地区"
+    type: url-test
+    proxies: []
+    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "Telegram"
+    type: select
+    proxies: ["节点选择", "新加坡-自动", "香港-自动", "日本-自动", "美国-自动", "台湾-自动", "其他地区", "DIRECT"]
+
+  - name: "PikPak"
+    type: select
+    proxies: ["节点选择", "新加坡-自动", "香港-自动", "日本-自动", "美国-自动", "台湾-自动", "其他地区", "DIRECT"]
+
+  - name: "全局直连"
+    type: select
+    proxies: ["DIRECT", "节点选择"]
+
+  - name: "全局拦截"
+    type: select
+    proxies: ["REJECT", "DIRECT"]
+
+  - name: "漏网之鱼"
+    type: select
+    proxies: ["节点选择", "延迟选优", "全局直连"]
 
 rules:
   - DOMAIN-KEYWORD,stun,REJECT
@@ -140,13 +137,22 @@ rules:
   - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
   - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
   - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
-  - RULE-SET,REJECT,REJECT
+  - RULE-SET,REJECT,全局拦截
   - RULE-SET,PikPak,PikPak
-  - RULE-SET,PROXY,🚀 节点选择
-  - RULE-SET,GFW,🚀 节点选择
-  - RULE-SET,DIRECT,DIRECT
-  - RULE-SET,LAN,DIRECT,no-resolve
-  - RULE-SET,CN,DIRECT,no-resolve
-  - GEOIP,LAN,DIRECT,no-resolve
-  - GEOIP,CN,DIRECT,no-resolve
-  - MATCH,🌐 漏网之鱼
+  - RULE-SET,PROXY,节点选择
+  - RULE-SET,GFW,节点选择
+  - RULE-SET,DIRECT,全局直连
+  - RULE-SET,LAN,全局直连,no-resolve
+  - RULE-SET,CN,全局直连,no-resolve
+  - GEOIP,LAN,全局直连,no-resolve
+  - GEOIP,CN,全局直连,no-resolve
+  - MATCH,漏网之鱼
+
+rule-providers:
+  REJECT: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt", path: ./ruleset/reject.yaml, interval: 86400 }
+  PikPak: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt", path: ./ruleset/pikpak.yaml, interval: 86400 }
+  PROXY: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt", path: ./ruleset/proxy.yaml, interval: 86400 }
+  GFW: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt", path: ./ruleset/gfw.yaml, interval: 86400 }
+  DIRECT: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt", path: ./ruleset/direct.yaml, interval: 86400 }
+  LAN: { type: http, behavior: ipcidr, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt", path: ./ruleset/lancidr.yaml, interval: 86400 }
+  CN: { type: http, behavior: ipcidr, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt", path: ./ruleset/cncidr.yaml, interval: 86400 }
