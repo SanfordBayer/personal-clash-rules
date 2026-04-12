@@ -1,0 +1,184 @@
+# Clash Meta / Mihomo Configuration Baseline v0.10.0
+# Strictly follows override.js v1.2.0 architecture
+# Compatible with modern subconverter / subscription tools
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: true
+tcp-concurrent: true
+unified-delay: true
+
+tun:
+  enable: true
+  stack: system
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack: ["0.0.0.0:53", "tcp://0.0.0.0:53"]
+  strict-route: true
+  mtu: 1500
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "localhost.ptlogin2.qq.com"
+    - "time.*.com"
+    - "stun.*.*"
+    - "+.srv.nintendo.net"
+    - "+.stun.playstation.net"
+    - "+.xboxlive.com"
+    - "geosite:cn"
+  default-nameserver: ["223.5.5.5", "119.29.29.29", "2400:3200::1"]
+  nameserver: ["https://dns.alidns.com/dns-query"]
+  fallback: ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"]
+  fallback-filter: { geoip: true, geoip-code: CN }
+  nameserver-policy:
+    "geosite:cn,private": ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"]
+    "geosite:geolocation-!cn": ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"]
+
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS: { ports: [443, 8443], override-destination: true }
+    HTTP: { ports: [80, 8080, 8443], override-destination: true }
+    QUIC: { ports: [443, 8443] }
+
+proxy-groups:
+  - name: "节点选择"
+    type: select
+    proxies: ["延迟选优", "故障转移", "新加坡-自动", "香港-自动", "日本-自动", "美国-自动", "台湾-自动", "其他地区", "DIRECT"]
+
+  - name: "延迟选优"
+    type: url-test
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\.1x|内测|内网|loopback)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    timeout: 5000
+    tolerance: 200
+
+  - name: "故障转移"
+    type: fallback
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\.1x|内测|内网|loopback)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    timeout: 5000
+
+  - name: "Telegram"
+    type: select
+    proxies: ["节点选择", "新加坡-自动", "香港-自动", "日本-自动", "美国-自动", "台湾-自动", "其他地区", "DIRECT"]
+
+  - name: "PikPak"
+    type: select
+    proxies: ["节点选择", "新加坡-自动", "香港-自动", "日本-自动", "美国-自动", "台湾-自动", "其他地区", "DIRECT"]
+
+  - name: "新加坡-自动"
+    type: url-test
+    include-all: true
+    filter: "(?i)(新加坡|SG|Singapore)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "香港-自动"
+    type: url-test
+    include-all: true
+    filter: "(?i)(香港|HK|Hong Kong)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "日本-自动"
+    type: url-test
+    include-all: true
+    filter: "(?i)(日本|JP|Japan)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "美国-自动"
+    type: url-test
+    include-all: true
+    filter: "(?i)(美国|US|United States)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "台湾-自动"
+    type: url-test
+    include-all: true
+    filter: "(?i)(台湾|TW|Tai Wan)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "其他地区"
+    type: url-test
+    include-all: true
+    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|测试|过期|内网|倍率)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "全局直连"
+    type: select
+    proxies: ["DIRECT", "节点选择"]
+
+  - name: "全局拦截"
+    type: select
+    proxies: ["REJECT", "DIRECT"]
+
+  - name: "漏网之鱼"
+    type: select
+    proxies: ["节点选择", "延迟选优", "全局直连"]
+
+  - name: "GLOBAL"
+    type: select
+    proxies: ["DIRECT", "节点选择", "延迟选优"]
+
+rules:
+  - DOMAIN-KEYWORD,stun,REJECT
+  - DOMAIN-KEYWORD,turn,REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
+  - PROCESS-NAME,Telegram.exe,Telegram
+  - PROCESS-NAME,Updater.exe,Telegram
+  - PROCESS-NAME,PikPak.exe,PikPak
+  - PROCESS-NAME,com.pikpak.app,PikPak
+  - DOMAIN-SUFFIX,telegram.org,Telegram
+  - DOMAIN-SUFFIX,telegram.me,Telegram
+  - DOMAIN-KEYWORD,telegram,Telegram
+  - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
+  - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
+  - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
+  - RULE-SET,REJECT,全局拦截
+  - RULE-SET,PikPak,PikPak
+  - RULE-SET,PROXY,节点选择
+  - RULE-SET,GFW,节点选择
+  - RULE-SET,DIRECT,全局直连
+  - RULE-SET,LAN,全局直连,no-resolve
+  - RULE-SET,CN,全局直连,no-resolve
+  - GEOIP,LAN,全局直连,no-resolve
+  - GEOIP,CN,全局直连,no-resolve
+  - MATCH,漏网之鱼
+
+rule-providers:
+  REJECT: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt", path: ./ruleset/reject.yaml, interval: 86400 }
+  PikPak: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt", path: ./ruleset/pikpak.yaml, interval: 86400 }
+  PROXY: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt", path: ./ruleset/proxy.yaml, interval: 86400 }
+  GFW: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt", path: ./ruleset/gfw.yaml, interval: 86400 }
+  DIRECT: { type: http, behavior: domain, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt", path: ./ruleset/direct.yaml, interval: 86400 }
+  LAN: { type: http, behavior: ipcidr, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt", path: ./ruleset/lancidr.yaml, interval: 86400 }
+  CN: { type: http, behavior: ipcidr, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt", path: ./ruleset/cncidr.yaml, interval: 86400 }
