@@ -1,6 +1,6 @@
-# Clash Meta / Mihomo Configuration Baseline v0.10.0
-# Strictly follows override.js v1.2.0 architecture
-# Compatible with modern subconverter / subscription tools
+# Clash Meta / Mihomo Configuration Baseline v0.10.1
+# Compatible with standard subconverter / subscription tools
+# Strictly follows override.js v1.2.0 logic
 
 mixed-port: 7890
 allow-lan: true
@@ -8,7 +8,6 @@ mode: rule
 log-level: info
 ipv6: true
 tcp-concurrent: true
-unified-delay: true
 
 tun:
   enable: true
@@ -57,24 +56,55 @@ sniffer:
 proxy-groups:
   - name: "节点选择"
     type: select
-    proxies: ["延迟选优", "故障转移", "新加坡-自动", "香港-自动", "日本-自动", "美国-自动", "台湾-自动", "其他地区", "DIRECT"]
+    proxies: []
 
-  - name: "延迟选优"
+  - name: "新加坡-自动"
     type: url-test
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\.1x|内测|内网|loopback)).*$"
+    proxies: []
+    filter: "(?i)(新加坡|SG|Singapore)"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
-    timeout: 5000
-    tolerance: 200
+    tolerance: 50
 
-  - name: "故障转移"
-    type: fallback
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\.1x|内测|内网|loopback)).*$"
+  - name: "香港-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(香港|HK|Hong Kong)"
     url: "https://www.gstatic.com/generate_204"
     interval: 300
-    timeout: 5000
+    tolerance: 50
+
+  - name: "日本-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(日本|JP|Japan)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "美国-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(美国|US|United States)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "台湾-自动"
+    type: url-test
+    proxies: []
+    filter: "(?i)(台湾|TW|Tai Wan)"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+
+  - name: "其他地区"
+    type: url-test
+    proxies: []
+    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW)).*$"
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
 
   - name: "Telegram"
     type: select
@@ -83,54 +113,6 @@ proxy-groups:
   - name: "PikPak"
     type: select
     proxies: ["节点选择", "新加坡-自动", "香港-自动", "日本-自动", "美国-自动", "台湾-自动", "其他地区", "DIRECT"]
-
-  - name: "新加坡-自动"
-    type: url-test
-    include-all: true
-    filter: "(?i)(新加坡|SG|Singapore)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "香港-自动"
-    type: url-test
-    include-all: true
-    filter: "(?i)(香港|HK|Hong Kong)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "日本-自动"
-    type: url-test
-    include-all: true
-    filter: "(?i)(日本|JP|Japan)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "美国-自动"
-    type: url-test
-    include-all: true
-    filter: "(?i)(美国|US|United States)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "台湾-自动"
-    type: url-test
-    include-all: true
-    filter: "(?i)(台湾|TW|Tai Wan)"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-
-  - name: "其他地区"
-    type: url-test
-    include-all: true
-    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|测试|过期|内网|倍率)).*$"
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
 
   - name: "全局直连"
     type: select
@@ -143,10 +125,6 @@ proxy-groups:
   - name: "漏网之鱼"
     type: select
     proxies: ["节点选择", "延迟选优", "全局直连"]
-
-  - name: "GLOBAL"
-    type: select
-    proxies: ["DIRECT", "节点选择", "延迟选优"]
 
 rules:
   - DOMAIN-KEYWORD,stun,REJECT
