@@ -1,4 +1,4 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.20
+// Clash.Meta / Mihomo Regional Extension Script v0.9.21
 // Filename: regional-extension.js
 // Features: WebRTC, DNS Anti-Leak, Regional Groups, Process Routing, QUIC Control, Smart Filter, Fallback
 // Compatible: subconverter (&script=), Mihomo >= v1.18.0, Clash.Meta, FlClash
@@ -64,7 +64,7 @@ function scoreNode(name, type) {
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Regional-Extension] v0.9.20 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Regional-Extension] v0.9.21 start | preset:${CONFIG.PRESET}`);
 
   // 1. Core Stack Injection
   config.ipv6 = CONFIG.DNS_IPV6;
@@ -141,7 +141,6 @@ function main(config) {
     });
   }
 
-  // Extract explicit sorted names to bypass include-all UI sorting
   const sortedProxyNames = config.proxies.map(p => p.name);
 
   config.proxies.forEach(p => {
@@ -177,16 +176,15 @@ function main(config) {
     groups.push({ ...baseGroup, name: "其他地区", type: "url-test", "include-all": true, filter: otherFilter });
   }
 
-  // CRITICAL FIX: Use explicit sorted list instead of include-all to force FlClash/Mihomo UI order
+  // FIXED: Auto groups FIRST, then sorted raw nodes, then DIRECT
   const mainProxies = CONFIG.ENABLE_REGIONAL_GROUPS 
-    ? [...sortedProxyNames, "延迟选优", "故障转移", ...regionalLabels, "DIRECT"] 
-    : [...sortedProxyNames, "延迟选优", "故障转移", "DIRECT"];
+    ? ["延迟选优", "故障转移", ...regionalLabels, ...sortedProxyNames, "DIRECT"] 
+    : ["延迟选优", "故障转移", ...sortedProxyNames, "DIRECT"];
 
   groups.unshift({
     name: "节点选择",
     type: "select",
     proxies: mainProxies
-    // include-all & filter removed to strictly enforce array order in GUI clients
   });
 
   groups.push({ name: "全局直连", type: "select", proxies: ["DIRECT", "节点选择"] });
@@ -226,7 +224,7 @@ function main(config) {
   config.rules = rules;
 
   // 8. Debug Report
-  console.log(`[Regional-Extension] v0.9.20 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  console.log(`[Regional-Extension] v0.9.21 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if (CONFIG.DEBUG) {
     console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_PROCESS_RULES} | QUIC=${CONFIG.BLOCK_QUIC} | WebRTC=${CONFIG.ENABLE_WEBRTC_BLOCK} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS}`);
     console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
