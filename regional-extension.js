@@ -1,4 +1,4 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.18
+// Clash.Meta / Mihomo Regional Extension Script v0.9.19
 // Filename: regional-extension.js
 // Features: WebRTC, DNS Anti-Leak, Regional Groups, Process Routing, QUIC Control, Smart Filter, Fallback
 // Compatible: subconverter (&script=), Mihomo >= v1.18.0, Clash.Meta
@@ -64,7 +64,7 @@ function scoreNode(name, type) {
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Regional-Extension] v0.9.18 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Regional-Extension] v0.9.19 start | preset:${CONFIG.PRESET}`);
 
   // 1. Core Stack Injection
   config.ipv6 = CONFIG.DNS_IPV6;
@@ -123,14 +123,31 @@ function main(config) {
     return config;
   }
 
-  if (CONFIG.ENABLE_SMART_SORT) config.proxies.sort((a, b) => scoreNode(b.name, b.type) - scoreNode(a.name, a.type));
+  // 5. Custom Priority Sort: HK -> SG -> US -> JP -> TW -> Others
+  if (CONFIG.ENABLE_SMART_SORT) {
+    const REGION_PRIORITY = { hk: 1, sg: 2, us: 3, jp: 4, tw: 5 };
+    function getRegionPriority(name) {
+      for (let key in REGION_PRIORITY) {
+        if (regionRegex[key].test(name)) return REGION_PRIORITY[key];
+      }
+      return 99; // Fallback for others
+    }
+
+    config.proxies.sort((a, b) => {
+      const prioA = getRegionPriority(a.name);
+      const prioB = getRegionPriority(b.name);
+      if (prioA !== prioB) return prioA - prioB;
+      // Same region or others: secondary sort by protocol/quality score
+      return scoreNode(b.name, b.type) - scoreNode(a.name, a.type);
+    });
+  }
 
   config.proxies.forEach(p => {
     p.udp = true;
     if (CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|hysteria2|tuic/i.test(p.type)) p.xudp = true;
   });
 
-  // 5. Dynamic Groups Builder
+  // 6. Dynamic Groups Builder
   const baseGroup = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, "max-failed-times": 5, tolerance: 200 };
   const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
   const regionStr = { hk: "香港|HK|Hong Kong|🇭🇰", us: "美国|US|United States|🇺🇸", tw: "台湾|TW|Tai Wan|🇹🇼", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
@@ -168,7 +185,7 @@ function main(config) {
 
   config["proxy-groups"] = groups;
 
-  // 6. Dynamic Rules Builder
+  // 7. Dynamic Rules Builder
   let rules = [];
 
   if (CONFIG.ENABLE_WEBRTC_BLOCK) {
@@ -197,8 +214,8 @@ function main(config) {
 
   config.rules = rules;
 
-  // 7. Debug Report
-  console.log(`[Regional-Extension] v0.9.18 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  // 8. Debug Report
+  console.log(`[Regional-Extension] v0.9.19 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if (CONFIG.DEBUG) {
     console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_PROCESS_RULES} | QUIC=${CONFIG.BLOCK_QUIC} | WebRTC=${CONFIG.ENABLE_WEBRTC_BLOCK} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS}`);
     console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
