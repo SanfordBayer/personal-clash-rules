@@ -1,7 +1,7 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.26
+// Clash.Meta / Mihomo Regional Extension Script v0.9.27
 // Filename: regional-extension.js
-// Final Solution: Numerical Indexing for UI Force-Sort
-// Target: Fixes unchangeable group order in Clash Verge Rev / FlClash
+// Features: Numerical UI Lock, DNS Validation Fix, Optimized App Routing
+// Optimized for: Clash Verge Rev, FlClash, Mihomo Kernel
 
 const CONFIG = {
   PRESET: "balanced",
@@ -25,8 +25,7 @@ const CONFIG = {
   ENABLE_WEBRTC_BLOCK: false,
   ENABLE_REGIONAL_GROUPS: true,
 
-  // v0.9.26: 强制 UI 排序映射表 (带前缀)
-  // 这样即便客户端开启字母排序，也会按照 01, 02... 的顺序排列
+  // UI 排序映射表：通过数字前缀破解客户端 A-Z 强制排序
   UI_MAP: {
     Proxy: "01 | Proxy",
     AutoTest: "02 | AutoTest",
@@ -46,6 +45,7 @@ const CONFIG = {
   }
 };
 
+const getName = (k) => CONFIG.UI_MAP[k] || k;
 const filterRegex = new RegExp(CONFIG.FILTER_KEYWORDS.join("|"), "i");
 const excludeRegex = new RegExp(CONFIG.EXCLUDE_KEYWORDS.join("|"), "i");
 const regionRegex = {
@@ -56,32 +56,28 @@ const regionRegex = {
   tw: /台湾|TW|Tai Wan|🇹/i
 };
 
-// 辅助函数：根据映射获取带前缀的名称
-const getName = (key) => CONFIG.UI_MAP[key] || key;
-
 function scoreNode(name, type) {
-  let score = 0;
-  for (let k in regionRegex) { if (regionRegex[k].test(name)) { score += CONFIG.REGION_WEIGHTS[k] || 0; break; } }
+  let s = 0;
+  for (let k in regionRegex) { if (regionRegex[k].test(name)) { s += CONFIG.REGION_WEIGHTS[k] || 0; break; } }
   const t = (type || "").toLowerCase();
-  if (/hysteria2|hy2/.test(t)) score += 40;
-  else if (/hysteria/.test(t)) score += 35;
-  else if (/tuic/.test(t)) score += 30;
-  else if (/trojan/.test(t)) score += 25;
-  else if (/vmess|vless|ss|shadowsocks/.test(t)) score += 15;
-  return score;
+  if (/hysteria2|hy2/.test(t)) s += 40;
+  else if (/hysteria/.test(t)) s += 35;
+  else if (/tuic/.test(t)) s += 30;
+  else if (/trojan/.test(t)) s += 25;
+  else if (/vmess|vless|ss|shadowsocks/.test(t)) s += 15;
+  return s;
 }
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Regional-Extension] v0.9.26 | Numerical Sort Engaged`);
 
-  // 1. Base Core
+  // 1. 基础内核配置
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
   config.tun = { enable: true, stack: "system", "auto-route": true, "auto-detect-interface": true, "dns-hijack": ["0.0.0.0:53"], "strict-route": true };
   config.sniffer = { enable: true, "parse-pure-ip": true, sniff: { TLS: { ports: [443, 8443], "override-destination": true }, HTTP: { ports: [80, 8080], "override-destination": true }, QUIC: { ports: [443] } } };
 
-  // 2. DNS
+  // 2. DNS 配置 (修复 proxy-server-nameserver 校验)
   const domesticNS = ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"];
   const foreignNS = ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"];
   config.dns = {
@@ -92,7 +88,7 @@ function main(config) {
     fallback: foreignNS, "fallback-filter": { geoip: true, "geoip-code": "CN" }
   };
 
-  // 3. Providers
+  // 3. 规则集配置
   const ruleUrl = n => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
   config["rule-providers"] = {
     reject: { type: "http", format: "yaml", interval: 86400, behavior: "domain", url: ruleUrl("reject") },
@@ -104,7 +100,7 @@ function main(config) {
     lancidr: { type: "http", format: "yaml", interval: 86400, behavior: "ipcidr", url: ruleUrl("lancidr") }
   };
 
-  // 4. Node Process
+  // 4. 节点处理与智能排序
   if (!config.proxies) return config;
   config.proxies = config.proxies.filter(p => p.name && p.type && !filterRegex.test(p.name) && !excludeRegex.test(p.name));
   
@@ -116,13 +112,13 @@ function main(config) {
   const sortedNames = config.proxies.map(p => p.name);
   config.proxies.forEach(p => { p.udp = true; if (CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|tuic/i.test(p.type)) p.xudp = true; });
 
-  // 5. Build Groups with Prefixes
+  // 5. 策略组构建
   const base = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, tolerance: 200 };
   const groups = [];
   const regionalKeys = ["HK", "SG", "JP", "US", "TW", "Other"];
   const regionalNames = regionalKeys.map(getName);
 
-  // Main Proxy
+  // 主选路组
   groups.push({ name: getName("Proxy"), type: "select", proxies: [getName("AutoTest"), getName("FailOver"), ...regionalNames, ...sortedNames, "DIRECT"] });
   groups.push({ ...base, name: getName("AutoTest"), type: "url-test", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
   groups.push({ ...base, name: getName("FailOver"), type: "fallback", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
@@ -135,14 +131,26 @@ function main(config) {
     groups.push({ ...base, name: getName("Other"), type: "url-test", "include-all": true, filter: `^(?!.*(${Object.values(rStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
   }
 
-  const appBackends = [...regionalNames, getName("AutoTest"), getName("Proxy"), "DIRECT"];
+  // 特定 App 组后端排序优化：SG 和 Proxy 排在最前
+  const appBackends = [
+    getName("SG"), 
+    getName("Proxy"), 
+    getName("HK"), 
+    getName("US"), 
+    getName("JP"), 
+    getName("TW"), 
+    getName("Other"), 
+    getName("AutoTest"), 
+    "DIRECT"
+  ];
+  
   groups.push({ name: getName("Telegram"), type: "select", proxies: appBackends }, { name: getName("PikPak"), type: "select", proxies: appBackends });
   groups.push({ name: getName("Direct"), type: "select", proxies: ["DIRECT"] }, { name: getName("Reject"), type: "select", proxies: ["REJECT", "DIRECT"] });
   groups.push({ name: getName("CatchAll"), type: "select", proxies: [getName("Proxy"), getName("AutoTest"), "DIRECT"] }, { name: getName("GLOBAL"), type: "select", proxies: ["DIRECT", getName("Proxy")] });
 
   config["proxy-groups"] = groups;
 
-  // 6. Rules (Matched with Prefixed Names)
+  // 6. 规则匹配逻辑
   let r = [];
   if (CONFIG.ENABLE_WEBRTC_BLOCK) r.push("DOMAIN-KEYWORD,stun,REJECT", "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT");
   if (CONFIG.BLOCK_QUIC === "overseas") r.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
