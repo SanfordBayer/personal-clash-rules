@@ -1,4 +1,4 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.22
+// Clash.Meta / Mihomo Regional Extension Script v0.9.23
 // Filename: regional-extension.js
 // Features: WebRTC, DNS Anti-Leak, Regional Groups, Process Routing, QUIC Control, Smart Filter, Fallback
 // Compatible: subconverter (&script=), Mihomo >= v1.18.0, Clash.Meta, Clash Verge, FlClash
@@ -35,7 +35,7 @@ const CONFIG = {
 const filterRegex = new RegExp(CONFIG.FILTER_KEYWORDS.join("|"), "i");
 const excludeRegex = new RegExp(CONFIG.EXCLUDE_KEYWORDS.join("|"), "i");
 const regionRegex = {
-  sg: /新加坡|SG|Singapore|🇸🇬/i,
+  sg: /新加坡|SG|Singapore|🇸/i,
   hk: /香港|HK|Hong Kong|🇭🇰/i,
   jp: /日本|JP|Japan|🇯🇵/i,
   us: /美国|US|United States|🇺🇸/i,
@@ -63,7 +63,7 @@ function scoreNode(name, type) {
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Regional-Extension] v0.9.22 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Regional-Extension] v0.9.23 start | preset:${CONFIG.PRESET}`);
 
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
@@ -142,18 +142,17 @@ function main(config) {
 
   const baseGroup = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, "max-failed-times": 5, tolerance: 200 };
   const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
-  const regionStr = { hk: "香港|HK|Hong Kong|🇭🇰", us: "美国|US|United States|🇺🇸", tw: "台湾|TW|Tai Wan|🇹🇼", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
+  const regionStr = { hk: "香港|HK|Hong Kong|🇭🇰", us: "美国|US|United States|🇺", tw: "台湾|TW|Tai Wan|🇹🇼", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
   const regionRe = k => `(?=.*(${regionStr[k]})).*$`;
   const otherFilter = `^(?!.*(${Object.values(regionStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
 
-  // EXACT UI ORDER ENFORCEMENT
   const groups = [];
   const regionalLabels = CONFIG.ENABLE_REGIONAL_GROUPS ? ["HK", "SG", "JP", "US", "TW", "Other"] : [];
 
-  // 1. Main Selector (explicit array overrides client sorting)
+  // 1. Main Selector (NO Telegram/PikPak here to prevent loop)
   const mainProxies = CONFIG.ENABLE_REGIONAL_GROUPS
-    ? ["AutoTest", "FailOver", ...regionalLabels, "Telegram", "PikPak", ...sortedProxyNames, "Direct"]
-    : ["AutoTest", "FailOver", "Telegram", "PikPak", ...sortedProxyNames, "Direct"];
+    ? ["AutoTest", "FailOver", ...regionalLabels, ...sortedProxyNames, "DIRECT"]
+    : ["AutoTest", "FailOver", ...sortedProxyNames, "DIRECT"];
   groups.push({ name: "Proxy", type: "select", proxies: mainProxies });
 
   // 2. Auto Groups
@@ -169,16 +168,20 @@ function main(config) {
     groups.push({ ...baseGroup, name: "Other", type: "url-test", "include-all": true, filter: otherFilter });
   }
 
-  // 3. App & Utility Groups
-  const appProxies = CONFIG.ENABLE_REGIONAL_GROUPS ? [...regionalLabels, "Proxy", "Direct"] : ["Proxy", "Direct"];
+  // 3. App Groups (Reference Proxy, NOT inside Proxy)
+  const appProxies = CONFIG.ENABLE_REGIONAL_GROUPS 
+    ? [...regionalLabels, "AutoTest", "FailOver", "Proxy", "DIRECT"] 
+    : ["AutoTest", "FailOver", "Proxy", "DIRECT"];
+    
   if (CONFIG.ENABLE_PROCESS_RULES) {
     groups.push({ name: "Telegram", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
     groups.push({ name: "PikPak", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
   }
 
-  groups.push({ name: "Direct", type: "select", proxies: ["DIRECT", "Proxy"] });
+  // 4. Utility Groups
+  groups.push({ name: "Direct", type: "select", proxies: ["DIRECT"] });
   groups.push({ name: "Reject", type: "select", proxies: ["REJECT", "DIRECT"] });
-  groups.push({ name: "CatchAll", type: "select", proxies: ["Proxy", "AutoTest", "Direct"] });
+  groups.push({ name: "CatchAll", type: "select", proxies: ["Proxy", "AutoTest", "DIRECT"] });
   groups.push({ name: "GLOBAL", type: "select", proxies: ["DIRECT", "Proxy", "AutoTest"] });
 
   config["proxy-groups"] = groups;
@@ -207,7 +210,7 @@ function main(config) {
   );
   config.rules = rules;
 
-  console.log(`[Regional-Extension] v0.9.22 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  console.log(`[Regional-Extension] v0.9.23 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if (CONFIG.DEBUG) {
     console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_PROCESS_RULES} | QUIC=${CONFIG.BLOCK_QUIC} | WebRTC=${CONFIG.ENABLE_WEBRTC_BLOCK} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS}`);
     console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
