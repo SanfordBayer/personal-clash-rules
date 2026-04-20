@@ -1,6 +1,6 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.28
+// Clash.Meta / Mihomo Regional Extension Script v0.9.29
 // Filename: regional-extension.js
-// Features: Numerical UI Lock, All-Proxies for PikPak, Removed TG Group
+// Features: Numerical UI Lock, PikPak Prioritized (Index 04), Removed TG Group
 // Optimized for: Clash Verge Rev, FlClash, Mihomo Kernel
 
 const CONFIG = {
@@ -25,18 +25,18 @@ const CONFIG = {
   ENABLE_WEBRTC_BLOCK: false,
   ENABLE_REGIONAL_GROUPS: true,
 
-  // UI 排序映射表
+  // UI 排序映射表：PikPak 提前至 04，地区组顺延
   UI_MAP: {
     Proxy: "01 | Proxy",
     AutoTest: "02 | AutoTest",
     FailOver: "03 | FailOver",
-    HK: "04 | HK",
-    SG: "05 | SG",
-    JP: "06 | JP",
-    US: "07 | US",
-    TW: "08 | TW",
-    Other: "09 | Other",
-    PikPak: "10 | PikPak", // 原 Telegram 位置
+    PikPak: "04 | PikPak",   // 提前至地区组之前
+    HK: "05 | HK",
+    SG: "06 | SG",
+    JP: "07 | JP",
+    US: "08 | US",
+    TW: "09 | TW",
+    Other: "10 | Other",
     Direct: "11 | Direct",
     Reject: "12 | Reject",
     CatchAll: "13 | CatchAll",
@@ -98,7 +98,6 @@ function main(config) {
     lancidr: { type: "http", format: "yaml", interval: 86400, behavior: "ipcidr", url: ruleUrl("lancidr") }
   };
 
-  // Node Processing
   if (!config.proxies) return config;
   config.proxies = config.proxies.filter(p => p.name && p.type && !filterRegex.test(p.name) && !excludeRegex.test(p.name));
   
@@ -110,17 +109,21 @@ function main(config) {
   const sortedNames = config.proxies.map(p => p.name);
   config.proxies.forEach(p => { p.udp = true; if (CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|tuic/i.test(p.type)) p.xudp = true; });
 
-  // 5. Build Groups
   const base = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, tolerance: 200 };
   const groups = [];
   const regionalKeys = ["HK", "SG", "JP", "US", "TW", "Other"];
   const regionalNames = regionalKeys.map(getName);
 
-  // Main Proxy Group
+  // 1-3. 核心选路组
   groups.push({ name: getName("Proxy"), type: "select", proxies: [getName("AutoTest"), getName("FailOver"), ...regionalNames, ...sortedNames, "DIRECT"] });
   groups.push({ ...base, name: getName("AutoTest"), type: "url-test", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
   groups.push({ ...base, name: getName("FailOver"), type: "fallback", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
 
+  // 4. PikPak (全节点，SG/Proxy 置顶)
+  const pikpakBackends = [getName("SG"), getName("Proxy"), ...sortedNames, "DIRECT"];
+  groups.push({ name: getName("PikPak"), type: "select", proxies: pikpakBackends });
+
+  // 5-10. 地区组
   if (CONFIG.ENABLE_REGIONAL_GROUPS) {
     const rStr = { hk: "香港|HK|Hong Kong|🇭", us: "美国|US|United States|🇺🇸", tw: "台湾|TW|Tai Wan|🇹", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
     ["hk", "sg", "jp", "us", "tw"].forEach(k => {
@@ -129,21 +132,12 @@ function main(config) {
     groups.push({ ...base, name: getName("Other"), type: "url-test", "include-all": true, filter: `^(?!.*(${Object.values(rStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
   }
 
-  // 10 | PikPak: 显示所有节点，且 SG 和 Proxy 置顶
-  const pikpakBackends = [
-    getName("SG"), 
-    getName("Proxy"), 
-    ...sortedNames, // 全节点
-    "DIRECT"
-  ];
-  
-  groups.push({ name: getName("PikPak"), type: "select", proxies: pikpakBackends });
+  // 11-14. 功能组
   groups.push({ name: getName("Direct"), type: "select", proxies: ["DIRECT"] }, { name: getName("Reject"), type: "select", proxies: ["REJECT", "DIRECT"] });
   groups.push({ name: getName("CatchAll"), type: "select", proxies: [getName("Proxy"), getName("AutoTest"), "DIRECT"] }, { name: getName("GLOBAL"), type: "select", proxies: ["DIRECT", getName("Proxy")] });
 
   config["proxy-groups"] = groups;
 
-  // 6. Rules Logic (TG Rules now point to Proxy)
   let r = [];
   if (CONFIG.ENABLE_WEBRTC_BLOCK) r.push("DOMAIN-KEYWORD,stun,REJECT", "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT");
   if (CONFIG.BLOCK_QUIC === "overseas") r.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
