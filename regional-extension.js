@@ -1,6 +1,6 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.27
+// Clash.Meta / Mihomo Regional Extension Script v0.9.28
 // Filename: regional-extension.js
-// Features: Numerical UI Lock, DNS Validation Fix, Optimized App Routing
+// Features: Numerical UI Lock, All-Proxies for PikPak, Removed TG Group
 // Optimized for: Clash Verge Rev, FlClash, Mihomo Kernel
 
 const CONFIG = {
@@ -25,7 +25,7 @@ const CONFIG = {
   ENABLE_WEBRTC_BLOCK: false,
   ENABLE_REGIONAL_GROUPS: true,
 
-  // UI 排序映射表：通过数字前缀破解客户端 A-Z 强制排序
+  // UI 排序映射表
   UI_MAP: {
     Proxy: "01 | Proxy",
     AutoTest: "02 | AutoTest",
@@ -36,12 +36,11 @@ const CONFIG = {
     US: "07 | US",
     TW: "08 | TW",
     Other: "09 | Other",
-    Telegram: "10 | Telegram",
-    PikPak: "11 | PikPak",
-    Direct: "12 | Direct",
-    Reject: "13 | Reject",
-    CatchAll: "14 | CatchAll",
-    GLOBAL: "15 | GLOBAL"
+    PikPak: "10 | PikPak", // 原 Telegram 位置
+    Direct: "11 | Direct",
+    Reject: "12 | Reject",
+    CatchAll: "13 | CatchAll",
+    GLOBAL: "14 | GLOBAL"
   }
 };
 
@@ -71,13 +70,12 @@ function scoreNode(name, type) {
 function main(config) {
   if (!config || typeof config !== "object") return config;
 
-  // 1. 基础内核配置
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
   config.tun = { enable: true, stack: "system", "auto-route": true, "auto-detect-interface": true, "dns-hijack": ["0.0.0.0:53"], "strict-route": true };
   config.sniffer = { enable: true, "parse-pure-ip": true, sniff: { TLS: { ports: [443, 8443], "override-destination": true }, HTTP: { ports: [80, 8080], "override-destination": true }, QUIC: { ports: [443] } } };
 
-  // 2. DNS 配置 (修复 proxy-server-nameserver 校验)
+  // DNS
   const domesticNS = ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"];
   const foreignNS = ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"];
   config.dns = {
@@ -88,7 +86,7 @@ function main(config) {
     fallback: foreignNS, "fallback-filter": { geoip: true, "geoip-code": "CN" }
   };
 
-  // 3. 规则集配置
+  // Rule Providers
   const ruleUrl = n => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
   config["rule-providers"] = {
     reject: { type: "http", format: "yaml", interval: 86400, behavior: "domain", url: ruleUrl("reject") },
@@ -100,7 +98,7 @@ function main(config) {
     lancidr: { type: "http", format: "yaml", interval: 86400, behavior: "ipcidr", url: ruleUrl("lancidr") }
   };
 
-  // 4. 节点处理与智能排序
+  // Node Processing
   if (!config.proxies) return config;
   config.proxies = config.proxies.filter(p => p.name && p.type && !filterRegex.test(p.name) && !excludeRegex.test(p.name));
   
@@ -112,13 +110,13 @@ function main(config) {
   const sortedNames = config.proxies.map(p => p.name);
   config.proxies.forEach(p => { p.udp = true; if (CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|tuic/i.test(p.type)) p.xudp = true; });
 
-  // 5. 策略组构建
+  // 5. Build Groups
   const base = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, tolerance: 200 };
   const groups = [];
   const regionalKeys = ["HK", "SG", "JP", "US", "TW", "Other"];
   const regionalNames = regionalKeys.map(getName);
 
-  // 主选路组
+  // Main Proxy Group
   groups.push({ name: getName("Proxy"), type: "select", proxies: [getName("AutoTest"), getName("FailOver"), ...regionalNames, ...sortedNames, "DIRECT"] });
   groups.push({ ...base, name: getName("AutoTest"), type: "url-test", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
   groups.push({ ...base, name: getName("FailOver"), type: "fallback", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
@@ -131,34 +129,31 @@ function main(config) {
     groups.push({ ...base, name: getName("Other"), type: "url-test", "include-all": true, filter: `^(?!.*(${Object.values(rStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
   }
 
-  // 特定 App 组后端排序优化：SG 和 Proxy 排在最前
-  const appBackends = [
+  // 10 | PikPak: 显示所有节点，且 SG 和 Proxy 置顶
+  const pikpakBackends = [
     getName("SG"), 
     getName("Proxy"), 
-    getName("HK"), 
-    getName("US"), 
-    getName("JP"), 
-    getName("TW"), 
-    getName("Other"), 
-    getName("AutoTest"), 
+    ...sortedNames, // 全节点
     "DIRECT"
   ];
   
-  groups.push({ name: getName("Telegram"), type: "select", proxies: appBackends }, { name: getName("PikPak"), type: "select", proxies: appBackends });
+  groups.push({ name: getName("PikPak"), type: "select", proxies: pikpakBackends });
   groups.push({ name: getName("Direct"), type: "select", proxies: ["DIRECT"] }, { name: getName("Reject"), type: "select", proxies: ["REJECT", "DIRECT"] });
   groups.push({ name: getName("CatchAll"), type: "select", proxies: [getName("Proxy"), getName("AutoTest"), "DIRECT"] }, { name: getName("GLOBAL"), type: "select", proxies: ["DIRECT", getName("Proxy")] });
 
   config["proxy-groups"] = groups;
 
-  // 6. 规则匹配逻辑
+  // 6. Rules Logic (TG Rules now point to Proxy)
   let r = [];
   if (CONFIG.ENABLE_WEBRTC_BLOCK) r.push("DOMAIN-KEYWORD,stun,REJECT", "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT");
   if (CONFIG.BLOCK_QUIC === "overseas") r.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
-  if (CONFIG.ENABLE_PROCESS_RULES) r.push(`PROCESS-NAME,Telegram.exe,${getName("Telegram")}`, `PROCESS-NAME,PikPak.exe,${getName("PikPak")}`);
+  if (CONFIG.ENABLE_PROCESS_RULES) {
+    r.push(`PROCESS-NAME,Telegram.exe,${getName("Proxy")}`, `PROCESS-NAME,PikPak.exe,${getName("PikPak")}`);
+  }
 
   r.push(
     `RULE-SET,reject,${getName("Reject")}`, `RULE-SET,pikpak,${getName("PikPak")}`,
-    `DOMAIN-KEYWORD,telegram,${getName("Telegram")}`, `IP-CIDR,91.108.0.0/16,${getName("Telegram")},no-resolve`,
+    `DOMAIN-KEYWORD,telegram,${getName("Proxy")}`, `IP-CIDR,91.108.0.0/16,${getName("Proxy")},no-resolve`,
     `RULE-SET,proxy,${getName("Proxy")}`, `RULE-SET,gfw,${getName("Proxy")}`, `RULE-SET,direct,${getName("Direct")}`,
     `GEOIP,LAN,${getName("Direct")},no-resolve`, `GEOIP,CN,${getName("Direct")},no-resolve`, `MATCH,${getName("CatchAll")}`
   );
