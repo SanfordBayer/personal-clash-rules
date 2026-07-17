@@ -1,151 +1,107 @@
-# Clash Meta Configuration v1.0.7 - Ultimate Fallback
-# 核心目标：100% 通过 Clash Mi 内核校验，绝对不报错，绝对能启动。
-# 兼容：Mihomo >= v1.18.0, Clash Mi, Clash Verge
+# ==========================================
+# Clash 远程配置模板
+# 适用于 Sub-Store 等订阅管理工具
+# ==========================================
 
+# --- 基础设置 ---
 mixed-port: 7890
 allow-lan: true
 mode: rule
 log-level: info
 ipv6: false
-tcp-concurrent: false
+external-controller: 0.0.0.0:9090
+external-ui: dashboard
 
-# 1. 关闭 TUN (防止苹果/安卓权限报错)
-tun:
-  enable: false
+# --- 代理节点配置 ---
+# 使用模板变量，将在渲染时替换为实际节点
+proxies:
+  %proxies%
 
-# 2. 基础 DNS (防泄露)
-dns:
-  enable: true
-  listen: 0.0.0.0:1053
-  ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    - "*.lan"
-    - "*.local"
-    - "+.msftconnecttest.com"
-    - "time.*.com"
-    - "stun.*.*"
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-  nameserver:
-    - https://dns.alidns.com/dns-query
-  # 关键：必须配置 proxy-server-nameserver 防止内核校验报错
-  proxy-server-nameserver:
-    - https://223.5.5.5/dns-query
-    - https://1.1.1.1/dns-query
-  fallback:
-    - https://1.1.1.1/dns-query
-    - https://8.8.4.4/dns-query
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
-
-# 3. 节点区域 (留空，依赖订阅导入或手动添加)
-# 如果订阅失效，这里为空也不会导致崩溃，因为有 DIRECT 保底
-proxies: []
-
-# 4. 策略组 (绝对防御架构)
-# 原则：
-# 1. 全部使用 select 类型 (最安全，不测速，不报空节点错)
-# 2. 每个组必须包含 DIRECT (防止空组校验失败)
-# 3. 严禁循环引用 (proxy 组绝不包含 telegram/pikpak)
+# --- 策略组配置 ---
 proxy-groups:
-  # 主策略组：只包含底层节点组和 DIRECT
-  - name: proxy
+  # 主策略组 - 自动选择最优节点
+  - name: 🚀 节点选择
     type: select
     proxies:
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - DIRECT
+      %primary_strategy_chain%
 
-  # 地区组：使用 select，包含 DIRECT 保底
-  - name: HK
+  # 地区策略组 - 按地理位置分组
+  - name: 🌏 地区选择
     type: select
     proxies:
-      - DIRECT
-  - name: SG
-    type: select
-    proxies:
-      - DIRECT
-  - name: JP
-    type: select
-    proxies:
-      - DIRECT
-  - name: US
-    type: select
-    proxies:
-      - DIRECT
-  - name: TW
-    type: select
-    proxies:
-      - DIRECT
-  - name: Other
-    type: select
-    proxies:
-      - DIRECT
+      %region_strategy_chain%
 
-  # 应用组：引用 proxy (单向依赖，防循环)
-  - name: telegram
+  # 协议策略组 - 按协议类型分组
+  - name: 🔄 协议选择
     type: select
     proxies:
-      - proxy
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - DIRECT
+      %protocol_strategy_chain%
 
-  - name: pikpak
-    type: select
-    proxies:
-      - proxy
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - DIRECT
+  # 所有策略组集合
+  %all_strategy_groups%
 
-  # 兜底组
-  - name: direct
+  # 备用策略组 - 故障转移
+  - name: ⚡ 自动切换
+    type: fallback
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+    proxies:
+      %primary_strategy_chain%
+
+  # 直连策略
+  - name:  全球直连
     type: select
     proxies:
       - DIRECT
-  - name: reject
+      -  节点选择
+
+  # 广告拦截
+  - name: 🛑 广告拦截
     type: select
     proxies:
       - REJECT
       - DIRECT
-  - name: catchall
-    type: select
-    proxies:
-      - proxy
-      - direct
 
-# 5. 规则 (绝对不使用 RULE-SET，全部用内置规则，组名严格小写)
+# --- DNS 配置 ---
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - '+.apple.com'
+    - '+.icloud.com'
+    - 'time.*.com'
+    - 'stun.*.*'
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+
+# --- 规则配置 ---
+# 使用模板变量，将在渲染时替换为实际规则
 rules:
-  # WebRTC 拦截
-  - DOMAIN-KEYWORD,stun,reject
-  - DOMAIN-KEYWORD,turn,reject
+  %rules%
 
-  # Telegram 路由
-  - DOMAIN-SUFFIX,telegram.org,telegram
-  - DOMAIN-SUFFIX,telegram.me,telegram
-  - DOMAIN-KEYWORD,telegram,telegram
-  - IP-CIDR,91.108.0.0/16,telegram,no-resolve
-  - IP-CIDR,149.154.160.0/20,telegram,no-resolve
-  - IP-CIDR6,2001:67c:4e8::/48,telegram,no-resolve
+# --- 其他配置 ---
+# 配置文件元信息（用于标识）
+# 文件名: %file_name%
+# 目标格式: %target_format%
+# 节点数量: %node_count%
 
-  # 直连规则
-  - GEOIP,CN,direct,no-resolve
-  - GEOIP,LAN,direct,no-resolve
-
-  # 兜底
-  - MATCH,catchall
+# --- 分组明细信息（注释说明）---
+# 地区策略组名称列表: %region_group_names%
+# 地区策略组节点数量: %region_group_counts%
+# 地区策略组逐行清单: %region_group_list%
+# 协议策略组名称列表: %protocol_group_names%
+# 协议策略组节点数量: %protocol_group_counts%
+# 协议策略组逐行清单: %protocol_group_list%
