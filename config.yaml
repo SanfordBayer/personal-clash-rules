@@ -1,10 +1,100 @@
+# Clash Meta Configuration v1.0.2
+# Remote Template Edition - Zero Loop & High Stability
+# Compatible: Mihomo >= v1.18.0, Clash Mi (iOS/Android), Clash Verge
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: true
+tcp-concurrent: true
+unified-delay: true
+
+# 🍎 Apple TUN 移动端完美拉起配置
+tun:
+  enable: true
+  stack: gvisor
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+    - "any:53"
+  strict-route: false
+  mtu: 1500
+
+# 🔍 核心收敛嗅探器（防发热）
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+    QUIC:
+      ports: [443, 8443]
+
+# 🛡️ DNS 管道（直连 IP，拒绝启动死锁）
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.apple.com"
+    - "+.icloud.com"
+    - "+.mzstatic.com"
+    - "time.*.com"
+    - "stun.*.*"
+    - "+.srv.nintendo.net"
+    - "geosite:cn"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 2400:3200::1
+  nameserver:
+    - https://dns.alidns.com/dns-query
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
+    - https://1.1.1.1/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.4.4/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+    "geosite:geolocation-!cn":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
+
+# 🛠️ 模板核心：数据源占位符
+# 客户端拉取模板后，只需在界面修改此处 URL 即可激活整个配置文件
+proxy-providers:
+  TemplateSub:
+    type: http
+    url: "{YOUR_SUB_URL}"  # 👈 导入客户端后，在这里或者在 UI 界面填入机场链接
+    interval: 3600
+    path: ./proxies.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: https://www.gstatic.com/generate_204
+
+# 🗺️ 策略组完美重构（无循环、带本地兜底、大写统一）
 proxy-groups:
+  # 01. 代理主控 (去除了自身与子组的冲突，加入具体的地区组)
   - name: proxy
     type: select
     proxies:
       - autotest
       - failover
-      - PikPak
+      - pikpak      # 👈 顺位调高
       - HK
       - SG
       - JP
@@ -13,46 +103,55 @@ proxy-groups:
       - Other
       - DIRECT
 
+  # 02. 自动测速主组（内含 DIRECT 兜底，绝不空包闪退）
   - name: autotest
     type: url-test
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 核心修复：加入兜底直连，防止空包崩溃
+      - DIRECT
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 180
     tolerance: 30
     lazy: true
 
+  # 03. 故障转移主组
   - name: failover
     type: fallback
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 兜底直连
+      - DIRECT
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 180
     tolerance: 30
     lazy: true
 
-  - name: PikPak
+  # 04. PikPak 专属组 (🎯 核心修复：移除 proxy，彻底打破 Loop 死循环！展示所有控制组和直连)
+  - name: pikpak
     type: select
     use: 
       - TemplateSub
     proxies:
-      - proxy
       - autotest
       - failover
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
       - DIRECT
 
+  # 05+. 地区自动测速组
   - name: HK
     type: url-test
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 兜底直连
+      - DIRECT
     filter: "(?i)(香港|HK|Hong Kong|🇭🇰)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -64,7 +163,7 @@ proxy-groups:
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 兜底直连
+      - DIRECT
     filter: "(?i)(新加坡|SG|Singapore|🇸🇬)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -76,7 +175,7 @@ proxy-groups:
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 兜底直连
+      - DIRECT
     filter: "(?i)(日本|JP|Japan|🇯🇵)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -88,7 +187,7 @@ proxy-groups:
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 兜底直连
+      - DIRECT
     filter: "(?i)(美国|US|United States|🇺🇸)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -100,7 +199,7 @@ proxy-groups:
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 兜底直连
+      - DIRECT
     filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -112,13 +211,14 @@ proxy-groups:
     use: 
       - TemplateSub
     proxies:
-      - DIRECT  # 👈 兜底直连
+      - DIRECT
     filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
     lazy: true
 
+  # 基础控制组
   - name: direct
     type: select
     proxies:
@@ -142,3 +242,30 @@ proxy-groups:
       - DIRECT
       - proxy
       - autotest
+
+# 📌 纯本地直接规则（无需额外下载 rule-providers，加载极速且绝不报错）
+rules:
+  # WebRTC & QUIC 拦截
+  - DOMAIN-KEYWORD,stun,reject
+  - DOMAIN-KEYWORD,turn,reject
+  - AND,((NETWORK,UDP),(DST-PORT,19302)),reject
+  - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),reject
+
+  # PikPak 独立路由
+  - PROCESS-NAME,PikPak.exe,pikpak
+  - PROCESS-NAME,com.pikpak.app,pikpak
+
+  # Telegram 流量归口统一走 proxy 组
+  - DOMAIN-SUFFIX,telegram.org,proxy
+  - DOMAIN-SUFFIX,telegram.me,proxy
+  - DOMAIN-KEYWORD,telegram,proxy
+  - IP-CIDR,91.108.0.0/16,proxy,no-resolve
+  - IP-CIDR,149.154.160.0/20,proxy,no-resolve
+  - IP-CIDR6,2001:67c:4e8::/48,proxy,no-resolve
+
+  # 国内直连与局域网
+  - GEOIP,LAN,direct,no-resolve
+  - GEOIP,CN,direct,no-resolve
+  
+  # 兜底
+  - MATCH,catchall
