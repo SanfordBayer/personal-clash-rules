@@ -1,7 +1,6 @@
-# Clash Meta Configuration v0.9.27
-# Fixed: CRITICAL loop detected in ProxyGroup (proxy -> telegram/pikpak -> proxy)
-# Optimized: DNS IP-direct, Fake-IP trim, Sniffer convergence, Health-check decoupling
-# Compatible: Mihomo >= v1.18.0, Clash Meta, Clash Verge, FlClash, Clash Mi
+# Clash Meta Configuration v0.9.28
+# Pure Subscription Mode: No proxy-providers, compatible with Clash Mi auto-injection
+# Optimized: DNS IP-direct, Fake-IP trim, Sniffer convergence, Loop-free groups
 
 mixed-port: 7890
 allow-lan: true
@@ -71,19 +70,8 @@ dns:
       - https://1.1.1.1/dns-query
       - https://8.8.4.4/dns-query
 
-proxy-providers:
-  MySubscription:
-    type: http
-    url: "YOUR_SUBSCRIPTION_URL_HERE"
-    interval: 3600
-    path: ./proxies.yaml
-    health-check:
-      enable: true
-      interval: 600
-      url: https://www.gstatic.com/generate_204
-
+# ✅ 策略组：使用 proxies: [] + filter，让 Clash Mi 自动注入节点
 proxy-groups:
-  # 🔥 CRITICAL FIX: Removed telegram and pikpak from proxy group to break the loop
   - name: proxy
     type: select
     proxies:
@@ -99,8 +87,7 @@ proxy-groups:
 
   - name: autotest
     type: url-test
-    use:
-      - MySubscription
+    proxies: []
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 180
@@ -109,8 +96,7 @@ proxy-groups:
 
   - name: failover
     type: fallback
-    use:
-      - MySubscription
+    proxies: []
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 180
@@ -119,8 +105,7 @@ proxy-groups:
 
   - name: HK
     type: url-test
-    use:
-      - MySubscription
+    proxies: []
     filter: "(?i)(香港|HK|Hong Kong|🇭🇰)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -129,9 +114,8 @@ proxy-groups:
 
   - name: SG
     type: url-test
-    use:
-      - MySubscription
-    filter: "(?i)(新加坡|SG|Singapore|🇬)"
+    proxies: []
+    filter: "(?i)(新加坡|SG|Singapore|🇸)"
     url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
@@ -139,8 +123,7 @@ proxy-groups:
 
   - name: JP
     type: url-test
-    use:
-      - MySubscription
+    proxies: []
     filter: "(?i)(日本|JP|Japan|🇯🇵)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -149,8 +132,7 @@ proxy-groups:
 
   - name: US
     type: url-test
-    use:
-      - MySubscription
+    proxies: []
     filter: "(?i)(美国|US|United States|🇺🇸)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -159,9 +141,8 @@ proxy-groups:
 
   - name: TW
     type: url-test
-    use:
-      - MySubscription
-    filter: "(?i)(台湾|TW|Tai Wan|🇹)"
+    proxies: []
+    filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
     url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
@@ -169,8 +150,7 @@ proxy-groups:
 
   - name: Other
     type: url-test
-    use:
-      - MySubscription
+    proxies: []
     filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 600
