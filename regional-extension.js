@@ -1,8 +1,8 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.24
+// Clash.Meta / Mihomo Regional Extension Script v0.9.25
 // Filename: regional-extension.js
 // Features: WebRTC, DNS Anti-Leak, Regional Groups, Process Routing, QUIC Control, Smart Filter, Fallback
 // Compatible: subconverter (&script=), Mihomo >= v1.18.0, Clash.Meta, Clash Verge, FlClash
-// Fixed: Apple platform TUN permission issues (iOS/macOS)
+// Fixed: Apple platform TUN permission issues + DNS validation + case consistency
 
 const CONFIG = {
   PRESET: "balanced",
@@ -30,11 +30,11 @@ const CONFIG = {
 const filterRegex = new RegExp(CONFIG.FILTER_KEYWORDS.join("|"), "i");
 const excludeRegex = new RegExp(CONFIG.EXCLUDE_KEYWORDS.join("|"), "i");
 const regionRegex = {
-  sg: /新加坡|SG|Singapore|🇬/i,
+  sg: /新加坡|SG|Singapore|🇸🇬/i,
   hk: /香港|HK|Hong Kong|🇭🇰/i,
   jp: /日本|JP|Japan|🇯🇵/i,
   us: /美国|US|United States|🇺🇸/i,
-  tw: /台湾|TW|Tai Wan|🇼/i
+  tw: /台湾|TW|Tai Wan|🇹🇼/i
 };
 
 const domesticNS = ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"];
@@ -58,21 +58,25 @@ function scoreNode(name, type) {
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
-  console.log(`[Regional-Extension] v0.9.24 start | preset:${CONFIG.PRESET}`);
+  console.log(`[Regional-Extension] v0.9.25 start | preset:${CONFIG.PRESET}`);
 
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
+  
+  // 🟢 FIX: Apple TUN compatibility + dns-hijack safety
   config.tun = { 
     enable: true, 
-    stack: "gvisor",  // v0.9.24: Changed from "system" for Apple compatibility
+    stack: "gvisor",
     "auto-route": true, 
     "auto-detect-interface": true, 
-    "dns-hijack": ["tcp://8.8.8.8:53"],  // v0.9.24: Adjusted for Apple DNS
-    "strict-route": false,  // v0.9.24: Disabled to prevent routing conflicts on iOS/macOS
+    "dns-hijack": ["any:53"],  // v0.9.25: Safe global hijack for iOS
+    "strict-route": false,
     mtu: 1500 
   };
+  
   config.sniffer = { enable: true, "parse-pure-ip": true, "force-dns-mapping": true, sniff: { TLS: { ports: [443, 8443], "override-destination": true }, HTTP: { ports: [80, 8080, 8443], "override-destination": true }, QUIC: { ports: [443, 8443] } } };
 
+  // 🟢 FIX: Add proxy-server-nameserver for Mihomo validation
   config.dns = {
     enable: true, listen: `0.0.0.0:${CONFIG.DNS_PORT}`, ipv6: true, "filter-aaaa": true,
     "enhanced-mode": "fake-ip", "fake-ip-range": "198.18.0.1/16",
@@ -81,7 +85,7 @@ function main(config) {
     "fake-ip-filter": ["*.lan", "*.local", "+.msftconnecttest.com", "+.msftncsi.com", "localhost.ptlogin2.qq.com", "time.*.com", "stun.*.*", "+.srv.nintendo.net", "+.stun.playstation.net", "+.xboxlive.com", "geosite:cn"],
     "default-nameserver": ["223.5.5.5", "119.29.29.29", "2400:3200::1"],
     nameserver: ["https://dns.alidns.com/dns-query"],
-    "proxy-server-nameserver": ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query", "223.5.5.5", "119.29.29.29"],
+    "proxy-server-nameserver": ["https://dns.alidns.com/dns-query", "https://doh.pub/dns-query"],  // v0.9.25: Required for nameserver-policy
     fallback: [...foreignNS],
     "fallback-filter": { geoip: true, "geoip-code": "CN" },
     "nameserver-policy": { "geosite:cn,private": domesticNS, "geosite:geolocation-!cn": foreignNS }
@@ -100,7 +104,7 @@ function main(config) {
 
   if (!Array.isArray(config.proxies) || config.proxies.length === 0) {
     console.warn("[Regional-Extension] proxies invalid/empty. Injecting safe fallback config.");
-    config["proxy-groups"] = [{ name: "Proxy", type: "select", proxies: ["DIRECT"] }];
+    config["proxy-groups"] = [{ name: "proxy", type: "select", proxies: ["DIRECT"] }];
     config.rules = ["MATCH,DIRECT"];
     config.proxies = [];
     return config;
@@ -116,7 +120,7 @@ function main(config) {
 
   if (config.proxies.length === 0) {
     console.warn("[Regional-Extension] All nodes filtered out. Injecting safe fallback config.");
-    config["proxy-groups"] = [{ name: "Proxy", type: "select", proxies: ["DIRECT"] }];
+    config["proxy-groups"] = [{ name: "proxy", type: "select", proxies: ["DIRECT"] }];
     config.rules = ["MATCH,DIRECT"];
     return config;
   }
@@ -145,20 +149,21 @@ function main(config) {
 
   const baseGroup = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, "max-failed-times": 5, tolerance: 200 };
   const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
-  const regionStr = { hk: "香港|HK|Hong Kong|🇭🇰", us: "美国|US|United States|🇺🇸", tw: "台湾|TW|Tai Wan|🇼", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
+  const regionStr = { hk: "香港|HK|Hong Kong|🇭🇰", us: "美国|US|United States|🇺🇸", tw: "台湾|TW|Tai Wan|🇹🇼", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
   const regionRe = k => `(?=.*(${regionStr[k]})).*$`;
   const otherFilter = `^(?!.*(${Object.values(regionStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
 
   const groups = [];
   const regionalLabels = CONFIG.ENABLE_REGIONAL_GROUPS ? ["HK", "SG", "JP", "US", "TW", "Other"] : [];
 
+  // 🟢 FIX: Use lowercase group names for consistency
   const mainProxies = CONFIG.ENABLE_REGIONAL_GROUPS
-    ? ["AutoTest", "FailOver", ...regionalLabels, ...sortedProxyNames, "DIRECT"]
-    : ["AutoTest", "FailOver", ...sortedProxyNames, "DIRECT"];
-  groups.push({ name: "Proxy", type: "select", proxies: mainProxies });
+    ? ["autotest", "failover", ...regionalLabels, ...sortedProxyNames, "DIRECT"]
+    : ["autotest", "failover", ...sortedProxyNames, "DIRECT"];
+  groups.push({ name: "proxy", type: "select", proxies: mainProxies });
 
-  groups.push({ ...baseGroup, name: "AutoTest", type: "url-test", "include-all": true, filter: safeFilter });
-  groups.push({ ...baseGroup, name: "FailOver", type: "fallback", "include-all": true, filter: safeFilter });
+  groups.push({ ...baseGroup, name: "autotest", type: "url-test", "include-all": true, filter: safeFilter });
+  groups.push({ ...baseGroup, name: "failover", type: "fallback", "include-all": true, filter: safeFilter });
 
   if (CONFIG.ENABLE_REGIONAL_GROUPS) {
     const regionOrder = ["hk", "sg", "jp", "us", "tw"];
@@ -170,18 +175,19 @@ function main(config) {
   }
 
   const appProxies = CONFIG.ENABLE_REGIONAL_GROUPS 
-    ? [...regionalLabels, "AutoTest", "FailOver", "Proxy", "DIRECT"] 
-    : ["AutoTest", "FailOver", "Proxy", "DIRECT"];
+    ? [...regionalLabels, "autotest", "failover", "proxy", "DIRECT"] 
+    : ["autotest", "failover", "proxy", "DIRECT"];
     
   if (CONFIG.ENABLE_PROCESS_RULES) {
-    groups.push({ name: "Telegram", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
-    groups.push({ name: "PikPak", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
+    groups.push({ name: "telegram", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
+    groups.push({ name: "pikpak", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
   }
 
-  groups.push({ name: "Direct", type: "select", proxies: ["DIRECT"] });
-  groups.push({ name: "Reject", type: "select", proxies: ["REJECT", "DIRECT"] });
-  groups.push({ name: "CatchAll", type: "select", proxies: ["Proxy", "AutoTest", "DIRECT"] });
-  groups.push({ name: "GLOBAL", type: "select", proxies: ["DIRECT", "Proxy", "AutoTest"] });
+  // 🟢 FIX: Lowercase utility group names
+  groups.push({ name: "direct", type: "select", proxies: ["DIRECT"] });
+  groups.push({ name: "reject", type: "select", proxies: ["REJECT", "DIRECT"] });
+  groups.push({ name: "catchall", type: "select", proxies: ["proxy", "autotest", "DIRECT"] });
+  groups.push({ name: "GLOBAL", type: "select", proxies: ["DIRECT", "proxy", "autotest"] });
 
   config["proxy-groups"] = groups;
 
@@ -195,21 +201,22 @@ function main(config) {
     rules.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
   }
   if (CONFIG.ENABLE_PROCESS_RULES) {
-    rules.push("PROCESS-NAME,Telegram.exe,Telegram", "PROCESS-NAME,Updater.exe,Telegram", "PROCESS-NAME,PikPak.exe,PikPak", "PROCESS-NAME,com.pikpak.app,PikPak");
+    rules.push("PROCESS-NAME,Telegram.exe,telegram", "PROCESS-NAME,Updater.exe,telegram", "PROCESS-NAME,PikPak.exe,pikpak", "PROCESS-NAME,com.pikpak.app,pikpak");
   }
 
+  // 🟢 FIX: Use lowercase group names in rules
   rules.push(
-    "RULE-SET,reject,Reject", "RULE-SET,pikpak,PikPak",
-    "DOMAIN-SUFFIX,telegram.org,Telegram", "DOMAIN-SUFFIX,telegram.me,Telegram", "DOMAIN-KEYWORD,telegram,Telegram",
-    "IP-CIDR,91.108.0.0/16,Telegram,no-resolve", "IP-CIDR,149.154.160.0/20,Telegram,no-resolve", "IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve",
-    "RULE-SET,proxy,Proxy", "RULE-SET,gfw,Proxy",
-    "RULE-SET,direct,Direct", "RULE-SET,lancidr,Direct,no-resolve", "RULE-SET,cncidr,Direct,no-resolve",
-    "GEOIP,LAN,Direct,no-resolve", "GEOIP,CN,Direct,no-resolve",
-    "MATCH,CatchAll"
+    "RULE-SET,reject,reject", "RULE-SET,pikpak,pikpak",
+    "DOMAIN-SUFFIX,telegram.org,telegram", "DOMAIN-SUFFIX,telegram.me,telegram", "DOMAIN-KEYWORD,telegram,telegram",
+    "IP-CIDR,91.108.0.0/16,telegram,no-resolve", "IP-CIDR,149.154.160.0/20,telegram,no-resolve", "IP-CIDR6,2001:67c:4e8::/48,telegram,no-resolve",
+    "RULE-SET,proxy,proxy", "RULE-SET,gfw,proxy",
+    "RULE-SET,direct,direct", "RULE-SET,lancidr,direct,no-resolve", "RULE-SET,cncidr,direct,no-resolve",
+    "GEOIP,LAN,direct,no-resolve", "GEOIP,CN,direct,no-resolve",
+    "MATCH,catchall"
   );
   config.rules = rules;
 
-  console.log(`[Regional-Extension] v0.9.24 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  console.log(`[Regional-Extension] v0.9.25 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
   if (CONFIG.DEBUG) {
     console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_PROCESS_RULES} | QUIC=${CONFIG.BLOCK_QUIC} | WebRTC=${CONFIG.ENABLE_WEBRTC_BLOCK} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS}`);
     console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
