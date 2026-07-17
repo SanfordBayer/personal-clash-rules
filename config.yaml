@@ -1,56 +1,49 @@
-# Mihomo / Clash.Meta Regional Profile
-# Features: Numerical UI Lock, PikPak Prioritized (Index 04), Removed TG Group
-# Optimized for: Clash Verge Rev, FlClash
+# Clash Meta Configuration v0.9.24
+# Compatible: Clash Meta (Mihomo) >= v1.18.0
+# Features: Regional Groups, Smart Sort, DNS Anti-Leak, WebRTC/QUIC Control
 
-# 基础全局配置
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
 ipv6: true
 tcp-concurrent: true
+unified-delay: true
 
-# TUN 模式配置
+# 🍎 Apple Platform TUN Configuration
 tun:
   enable: true
-  stack: system
+  stack: gvisor  # Userspace stack for iOS/macOS compatibility
   auto-route: true
   auto-detect-interface: true
   dns-hijack:
-    - "0.0.0.0:53"
-  strict-route: true
+    - tcp://8.8.8.8:53
+  strict-route: false  # Prevent routing conflicts on Apple devices
+  mtu: 1500
 
-# 嗅探器配置
-sniffer:
-  enable: true
-  parse-pure-ip: true
-  sniff:
-    TLS:
-      ports: [443, 8443]
-      override-destination: true
-    HTTP:
-      ports: [80, 8080]
-      override-destination: true
-    QUIC:
-      ports: [443]
-
-# DNS 增强配置 (使用脚本同款 Fake-IP 及内外分流)
+#  DNS Anti-Leak Pipeline
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: true
   enhanced-mode: fake-ip
-  respect-rules: true
-  proxy-server-nameserver:
-    - https://doh.pub/dns-query
-    - https://dns.alidns.com/dns-query
-    - 223.5.5.5
-  nameserver-policy:
-    "geosite:cn,private":
-      - https://doh.pub/dns-query
-      - https://dns.alidns.com/dns-query
-    "geosite:geolocation-!cn":
-      - https://1.1.1.1/dns-query
-      - https://8.8.4.4/dns-query
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "localhost.ptlogin2.qq.com"
+    - "time.*.com"
+    - "stun.*.*"
+    - "+.srv.nintendo.net"
+    - "+.stun.playstation.net"
+    - "+.xboxlive.com"
+    - "geosite:cn"
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
+    - 2400:3200::1
   nameserver:
     - https://dns.alidns.com/dns-query
   fallback:
@@ -59,213 +52,263 @@ dns:
   fallback-filter:
     geoip: true
     geoip-code: CN
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+    "geosite:geolocation-!cn":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
 
-# 远程规则集
-rule-providers:
-  reject:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
-  pikpak:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt"
-  proxy:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
-  direct:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
-  gfw:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
-  cncidr:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
-  lancidr:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+# 🔍 Protocol Sniffer
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+    HTTP:
+      ports: [80, 8080, 8443]
+      override-destination: true
+    QUIC:
+      ports: [443, 8443]
 
-# 节点列表（请在此处粘贴或通过订阅生成你的节点）
-proxies:
-  # - name: "香港 01"
-  #   type: ss
-  #   ...
+# 📡 Proxy Providers (Replace with your subscription)
+proxy-providers:
+  MySubscription:
+    type: http
+    url: "YOUR_SUBSCRIPTION_URL_HERE"  # ⚠️ 替换为你的订阅链接
+    interval: 3600
+    path: ./proxies.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: https://www.gstatic.com/generate_204
 
-# 策略组配置
+# 🎯 Proxy Groups (Exact Order: Proxy -> AutoTest -> Regions -> Apps -> Nodes)
 proxy-groups:
-  # 01 | Proxy 核心选路
-  - name: "01 | Proxy"
+  - name: Proxy
     type: select
     proxies:
-      - "02 | AutoTest"
-      - "03 | FailOver"
-      - "05 | HK"
-      - "06 | SG"
-      - "07 | JP"
-      - "08 | US"
-      - "09 | TW"
-      - "10 | Other"
+      - AutoTest
+      - FailOver
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - Telegram
+      - PikPak
       - DIRECT
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
 
-  # 02 | 自动延迟测试
-  - name: "02 | AutoTest"
+  - name: AutoTest
     type: url-test
-    url: "https://www.gstatic.com/generate_204"
+    use:
+      - MySubscription
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
+    url: https://www.gstatic.com/generate_204
     interval: 300
-    timeout: 5000
-    lazy: true
-    tolerance: 200
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    tolerance: 50
 
-  # 03 | 故障转移
-  - name: "03 | FailOver"
+  - name: FailOver
     type: fallback
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    timeout: 5000
-    lazy: true
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
-
-  # 04 | PikPak (独立策略组，展示所有有效节点，SG 和 Proxy 置顶)
-  - name: "04 | PikPak"
-    type: select
-    proxies:
-      - "06 | SG"
-      - "01 | Proxy"
-      - DIRECT
-    include-all: true
+    use:
+      - MySubscription
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
-
-  # 05 | 香港
-  - name: "05 | HK"
-    type: url-test
-    url: "https://www.gstatic.com/generate_204"
+    url: https://www.gstatic.com/generate_204
     interval: 300
-    timeout: 5000
-    lazy: true
-    include-all: true
-    filter: "(?=.*(香港|HK|Hong Kong|🇭)).*$"
+    tolerance: 50
 
-  # 06 | 新加坡
-  - name: "06 | SG"
+  - name: HK
     type: url-test
-    url: "https://www.gstatic.com/generate_204"
+    use:
+      - MySubscription
+    filter: "(?i)(香港|HK|Hong Kong|🇭🇰)"
+    url: https://www.gstatic.com/generate_204
     interval: 300
-    timeout: 5000
-    lazy: true
-    include-all: true
-    filter: "(?=.*(新加坡|SG|Singapore|🇸🇬)).*$"
+    tolerance: 50
 
-  # 07 | 日本
-  - name: "07 | JP"
+  - name: SG
     type: url-test
-    url: "https://www.gstatic.com/generate_204"
+    use:
+      - MySubscription
+    filter: "(?i)(新加坡|SG|Singapore|🇸🇬)"
+    url: https://www.gstatic.com/generate_204
     interval: 300
-    timeout: 5000
-    lazy: true
-    include-all: true
-    filter: "(?=.*(日本|JP|Japan|🇯🇵)).*$"
+    tolerance: 50
 
-  # 08 | 美国
-  - name: "08 | US"
+  - name: JP
     type: url-test
-    url: "https://www.gstatic.com/generate_204"
+    use:
+      - MySubscription
+    filter: "(?i)(日本|JP|Japan|🇯🇵)"
+    url: https://www.gstatic.com/generate_204
     interval: 300
-    timeout: 5000
-    lazy: true
-    include-all: true
-    filter: "(?=.*(美国|US|United States|🇺🇸)).*$"
+    tolerance: 50
 
-  # 09 | 台湾
-  - name: "09 | TW"
+  - name: US
     type: url-test
-    url: "https://www.gstatic.com/generate_204"
+    use:
+      - MySubscription
+    filter: "(?i)(美国|US|United States|🇺)"
+    url: https://www.gstatic.com/generate_204
     interval: 300
-    timeout: 5000
-    lazy: true
-    include-all: true
-    filter: "(?=.*(台湾|TW|Tai Wan|🇹)).*$"
+    tolerance: 50
 
-  # 10 | 其他地区
-  - name: "10 | Other"
+  - name: TW
     type: url-test
-    url: "https://www.gstatic.com/generate_204"
+    use:
+      - MySubscription
+    filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
+    url: https://www.gstatic.com/generate_204
     interval: 300
-    timeout: 5000
-    lazy: true
-    include-all: true
-    filter: "^(?!.*(香港|HK|Hong Kong|🇭|新加坡|SG|Singapore|🇸🇬|日本|JP|Japan|🇯🇵|美国|US|United States|🇺🇸|台湾|TW|Tai Wan|🇹|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    tolerance: 50
 
-  # 功能辅助组
-  - name: "11 | Direct"
+  - name: Other
+    type: url-test
+    use:
+      - MySubscription
+    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: Telegram
+    type: select
+    proxies:
+      - Proxy
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - AutoTest
+      - DIRECT
+
+  - name: PikPak
+    type: select
+    proxies:
+      - Proxy
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - AutoTest
+      - DIRECT
+
+  - name: Direct
     type: select
     proxies:
       - DIRECT
+      - Proxy
 
-  - name: "12 | Reject"
+  - name: Reject
     type: select
     proxies:
       - REJECT
       - DIRECT
 
-  - name: "13 | CatchAll"
+  - name: CatchAll
     type: select
     proxies:
-      - "01 | Proxy"
-      - "02 | AutoTest"
+      - Proxy
+      - AutoTest
       - DIRECT
 
-  - name: "14 | GLOBAL"
+  - name: GLOBAL
     type: select
     proxies:
       - DIRECT
-      - "01 | Proxy"
+      - Proxy
+      - AutoTest
 
-# 路由规则
+# 📚 Rule Providers
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+  pikpak:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt"
+    path: ./ruleset/pikpak.yaml
+    interval: 86400
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+# 🚦 Routing Rules
 rules:
-  # QUIC 拦截 (海外拒绝)
+  # WebRTC Leak Protection
+  - DOMAIN-KEYWORD,stun,REJECT
+  - DOMAIN-KEYWORD,turn,REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
+
+  # QUIC Blocking (Overseas only)
   - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
-  
-  # 进程分流
-  - PROCESS-NAME,Telegram.exe,01 | Proxy
-  - PROCESS-NAME,PikPak.exe,04 | PikPak
-  
-  # 规则集与关键词匹配
-  - RULE-SET,reject,12 | Reject
-  - RULE-SET,pikpak,04 | PikPak
-  - DOMAIN-KEYWORD,telegram,01 | Proxy
-  - IP-CIDR,91.108.0.0/16,01 | Proxy,no-resolve
-  - RULE-SET,proxy,01 | Proxy
-  - RULE-SET,gfw,01 | Proxy
-  - RULE-SET,direct,11 | Direct
-  
-  # 局域网与国内绕过
-  - GEOIP,LAN,11 | Direct,no-resolve
-  - GEOIP,CN,11 | Direct,no-resolve
-  
-  # 漏网之鱼
-  - MATCH,13 | CatchAll
+
+  # Process-Based Routing
+  - PROCESS-NAME,Telegram.exe,Telegram
+  - PROCESS-NAME,Updater.exe,Telegram
+  - PROCESS-NAME,PikPak.exe,PikPak
+  - PROCESS-NAME,com.pikpak.app,PikPak
+
+  # Telegram Domains & IPs
+  - DOMAIN-SUFFIX,telegram.org,Telegram
+  - DOMAIN-SUFFIX,telegram.me,Telegram
+  - DOMAIN-KEYWORD,telegram,Telegram
+  - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
+  - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
+  - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
+
+  # Rule Sets
+  - RULE-SET,reject,Reject
+  - RULE-SET,pikpak,PikPak
+  - RULE-SET,proxy,Proxy
+  - RULE-SET,gfw,Proxy
+  - RULE-SET,direct,Direct
+  - RULE-SET,lancidr,Direct,no-resolve
+  - RULE-SET,cncidr,Direct,no-resolve
+
+  # GeoIP
+  - GEOIP,LAN,Direct,no-resolve
+  - GEOIP,CN,Direct,no-resolve
+
+  # Fallback
+  - MATCH,CatchAll
