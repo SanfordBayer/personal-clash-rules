@@ -1,6 +1,7 @@
-# Clash Meta Configuration v0.9.24
+# Clash Meta Configuration v0.9.25
 # Compatible: Clash Meta (Mihomo) >= v1.18.0
 # Features: Regional Groups, Smart Sort, DNS Anti-Leak, WebRTC/QUIC Control
+# Fixed: Apple TUN compatibility + DNS validation + case consistency
 
 mixed-port: 7890
 allow-lan: true
@@ -13,15 +14,15 @@ unified-delay: true
 # 🍎 Apple Platform TUN Configuration
 tun:
   enable: true
-  stack: gvisor  # Userspace stack for iOS/macOS compatibility
+  stack: gvisor
   auto-route: true
   auto-detect-interface: true
   dns-hijack:
-    - tcp://8.8.8.8:53
-  strict-route: false  # Prevent routing conflicts on Apple devices
+    - "any:53"
+  strict-route: false
   mtu: 1500
 
-#  DNS Anti-Leak Pipeline
+# 🛡️ DNS Anti-Leak Pipeline
 dns:
   enable: true
   listen: 0.0.0.0:1053
@@ -35,6 +36,213 @@ dns:
     - "+.msftncsi.com"
     - "localhost.ptlogin2.qq.com"
     - "time.*.com"
+    - "stun.*.*"
+    - "+.srv.nintendo.net"
+    - "+.stun.playstation.net"
+    - "+.xboxlive.com"
+    - "geosite:cn"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 2400:3200::1
+  nameserver:
+    - https://dns.alidns.com/dns-query
+  # 🟢 FIX: Required for nameserver-policy validation
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.4.4/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+    "geosite:geolocation-!cn":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
+
+# 🔍 Protocol Sniffer
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+    HTTP:
+      ports: [80, 8080, 8443]
+      override-destination: true
+    QUIC:
+      ports: [443, 8443]
+
+# 📡 Proxy Providers
+proxy-providers:
+  MySubscription:
+    type: http
+    url: "YOUR_SUBSCRIPTION_URL_HERE"
+    interval: 3600
+    path: ./proxies.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: https://www.gstatic.com/generate_204
+
+# 🎯 Proxy Groups (Lowercase names for consistency)
+proxy-groups:
+  - name: proxy
+    type: select
+    proxies:
+      - autotest
+      - failover
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - telegram
+      - pikpak
+      - DIRECT
+
+  - name: autotest
+    type: url-test
+    use:
+      - MySubscription
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: failover
+    type: fallback
+    use:
+      - MySubscription
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: HK
+    type: url-test
+    use:
+      - MySubscription
+    filter: "(?i)(香港|HK|Hong Kong|🇭🇰)"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: SG
+    type: url-test
+    use:
+      - MySubscription
+    filter: "(?i)(新加坡|SG|Singapore|🇸🇬)"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: JP
+    type: url-test
+    use:
+      - MySubscription
+    filter: "(?i)(日本|JP|Japan|🇯🇵)"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: US
+    type: url-test
+    use:
+      - MySubscription
+    filter: "(?i)(美国|US|United States|🇺🇸)"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: TW
+    type: url-test
+    use:
+      - MySubscription
+    filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: Other
+    type: url-test
+    use:
+      - MySubscription
+    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: telegram
+    type: select
+    proxies:
+      - proxy
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - autotest
+      - DIRECT
+
+  - name: pikpak
+    type: select
+    proxies:
+      - proxy
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - autotest
+      - DIRECT
+
+  - name: direct
+    type: select
+    proxies:
+      - DIRECT
+
+  - name: reject
+    type: select
+    proxies:
+      - REJECT
+
+  - name: catchall
+    type: select
+    proxies:
+      - proxy
+      - autotest
+      - DIRECT
+
+  - name: GLOBAL
+    type: select
+    proxies:
+      - DIRECT
+      - proxy
+      - autotest
+
+# 📚 Rule Providers
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+  pikpak:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loy    - "time.*.com"
     - "stun.*.*"
     - "+.srv.nintendo.net"
     - "+.stun.playstation.net"
