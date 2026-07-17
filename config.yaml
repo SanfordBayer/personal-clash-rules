@@ -1,7 +1,6 @@
-# Clash Meta Configuration v0.9.25
-# Compatible: Clash Meta (Mihomo) >= v1.18.0
-# Features: Regional Groups, Smart Sort, DNS Anti-Leak, WebRTC/QUIC Control
-# Fixed: Apple TUN compatibility + DNS validation + case consistency
+# Clash Meta Configuration v0.9.26
+# Optimized by Qwen3.7: DNS IP-direct, Fake-IP trim, Sniffer convergence, Health-check decoupling
+# Compatible: Mihomo >= v1.18.0, Clash Meta, Clash Verge, FlClash, Clash Mi (iOS)
 
 mixed-port: 7890
 allow-lan: true
@@ -11,7 +10,6 @@ ipv6: true
 tcp-concurrent: true
 unified-delay: true
 
-# 🍎 Apple Platform TUN Configuration
 tun:
   enable: true
   stack: gvisor
@@ -22,7 +20,17 @@ tun:
   strict-route: false
   mtu: 1500
 
-# 🛡️ DNS Anti-Leak Pipeline
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+    QUIC:
+      ports: [443, 8443]
+
 dns:
   enable: true
   listen: 0.0.0.0:1053
@@ -32,14 +40,12 @@ dns:
   fake-ip-filter:
     - "*.lan"
     - "*.local"
-    - "+.msftconnecttest.com"
-    - "+.msftncsi.com"
-    - "localhost.ptlogin2.qq.com"
+    - "+.apple.com"
+    - "+.icloud.com"
+    - "+.mzstatic.com"
     - "time.*.com"
     - "stun.*.*"
     - "+.srv.nintendo.net"
-    - "+.stun.playstation.net"
-    - "+.xboxlive.com"
     - "geosite:cn"
   default-nameserver:
     - 223.5.5.5
@@ -47,10 +53,9 @@ dns:
     - 2400:3200::1
   nameserver:
     - https://dns.alidns.com/dns-query
-  # 🟢 FIX: Required for nameserver-policy validation
   proxy-server-nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+    - https://223.5.5.5/dns-query
+    - https://1.1.1.1/dns-query
   fallback:
     - https://1.1.1.1/dns-query
     - https://8.8.4.4/dns-query
@@ -65,22 +70,6 @@ dns:
       - https://1.1.1.1/dns-query
       - https://8.8.4.4/dns-query
 
-# 🔍 Protocol Sniffer
-sniffer:
-  enable: true
-  parse-pure-ip: true
-  force-dns-mapping: true
-  sniff:
-    TLS:
-      ports: [443, 8443]
-      override-destination: true
-    HTTP:
-      ports: [80, 8080, 8443]
-      override-destination: true
-    QUIC:
-      ports: [443, 8443]
-
-# 📡 Proxy Providers
 proxy-providers:
   MySubscription:
     type: http
@@ -92,7 +81,6 @@ proxy-providers:
       interval: 600
       url: https://www.gstatic.com/generate_204
 
-# 🎯 Proxy Groups (Lowercase names for consistency)
 proxy-groups:
   - name: proxy
     type: select
@@ -115,8 +103,9 @@ proxy-groups:
       - MySubscription
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 180
+    tolerance: 30
+    lazy: true
 
   - name: failover
     type: fallback
@@ -124,8 +113,9 @@ proxy-groups:
       - MySubscription
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 180
+    tolerance: 30
+    lazy: true
 
   - name: HK
     type: url-test
@@ -133,8 +123,9 @@ proxy-groups:
       - MySubscription
     filter: "(?i)(香港|HK|Hong Kong|🇭🇰)"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 600
+    tolerance: 100
+    lazy: true
 
   - name: SG
     type: url-test
@@ -142,8 +133,9 @@ proxy-groups:
       - MySubscription
     filter: "(?i)(新加坡|SG|Singapore|🇸🇬)"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 600
+    tolerance: 100
+    lazy: true
 
   - name: JP
     type: url-test
@@ -151,8 +143,9 @@ proxy-groups:
       - MySubscription
     filter: "(?i)(日本|JP|Japan|🇯🇵)"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 600
+    tolerance: 100
+    lazy: true
 
   - name: US
     type: url-test
@@ -160,8 +153,9 @@ proxy-groups:
       - MySubscription
     filter: "(?i)(美国|US|United States|🇺🇸)"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 600
+    tolerance: 100
+    lazy: true
 
   - name: TW
     type: url-test
@@ -169,8 +163,9 @@ proxy-groups:
       - MySubscription
     filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 600
+    tolerance: 100
+    lazy: true
 
   - name: Other
     type: url-test
@@ -178,8 +173,9 @@ proxy-groups:
       - MySubscription
     filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    interval: 600
+    tolerance: 100
+    lazy: true
 
   - name: telegram
     type: select
@@ -231,212 +227,6 @@ proxy-groups:
       - proxy
       - autotest
 
-# 📚 Rule Providers
-rule-providers:
-  reject:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
-    path: ./ruleset/reject.yaml
-    interval: 86400
-  pikpak:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loy    - "time.*.com"
-    - "stun.*.*"
-    - "+.srv.nintendo.net"
-    - "+.stun.playstation.net"
-    - "+.xboxlive.com"
-    - "geosite:cn"
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-    - 2400:3200::1
-  nameserver:
-    - https://dns.alidns.com/dns-query
-  fallback:
-    - https://1.1.1.1/dns-query
-    - https://8.8.4.4/dns-query
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
-  nameserver-policy:
-    "geosite:cn,private":
-      - https://doh.pub/dns-query
-      - https://dns.alidns.com/dns-query
-    "geosite:geolocation-!cn":
-      - https://1.1.1.1/dns-query
-      - https://8.8.4.4/dns-query
-
-# 🔍 Protocol Sniffer
-sniffer:
-  enable: true
-  parse-pure-ip: true
-  force-dns-mapping: true
-  sniff:
-    TLS:
-      ports: [443, 8443]
-      override-destination: true
-    HTTP:
-      ports: [80, 8080, 8443]
-      override-destination: true
-    QUIC:
-      ports: [443, 8443]
-
-# 📡 Proxy Providers (Replace with your subscription)
-proxy-providers:
-  MySubscription:
-    type: http
-    url: "YOUR_SUBSCRIPTION_URL_HERE"  # ⚠️ 替换为你的订阅链接
-    interval: 3600
-    path: ./proxies.yaml
-    health-check:
-      enable: true
-      interval: 600
-      url: https://www.gstatic.com/generate_204
-
-# 🎯 Proxy Groups (Exact Order: Proxy -> AutoTest -> Regions -> Apps -> Nodes)
-proxy-groups:
-  - name: Proxy
-    type: select
-    proxies:
-      - AutoTest
-      - FailOver
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - Telegram
-      - PikPak
-      - DIRECT
-
-  - name: AutoTest
-    type: url-test
-    use:
-      - MySubscription
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: FailOver
-    type: fallback
-    use:
-      - MySubscription
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: HK
-    type: url-test
-    use:
-      - MySubscription
-    filter: "(?i)(香港|HK|Hong Kong|🇭🇰)"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: SG
-    type: url-test
-    use:
-      - MySubscription
-    filter: "(?i)(新加坡|SG|Singapore|🇸🇬)"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: JP
-    type: url-test
-    use:
-      - MySubscription
-    filter: "(?i)(日本|JP|Japan|🇯🇵)"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: US
-    type: url-test
-    use:
-      - MySubscription
-    filter: "(?i)(美国|US|United States|🇺)"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: TW
-    type: url-test
-    use:
-      - MySubscription
-    filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: Other
-    type: url-test
-    use:
-      - MySubscription
-    filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: Telegram
-    type: select
-    proxies:
-      - Proxy
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - AutoTest
-      - DIRECT
-
-  - name: PikPak
-    type: select
-    proxies:
-      - Proxy
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - AutoTest
-      - DIRECT
-
-  - name: Direct
-    type: select
-    proxies:
-      - DIRECT
-      - Proxy
-
-  - name: Reject
-    type: select
-    proxies:
-      - REJECT
-      - DIRECT
-
-  - name: CatchAll
-    type: select
-    proxies:
-      - Proxy
-      - AutoTest
-      - DIRECT
-
-  - name: GLOBAL
-    type: select
-    proxies:
-      - DIRECT
-      - Proxy
-      - AutoTest
-
-# 📚 Rule Providers
 rule-providers:
   reject:
     type: http
@@ -481,42 +271,28 @@ rule-providers:
     path: ./ruleset/lancidr.yaml
     interval: 86400
 
-# 🚦 Routing Rules
 rules:
-  # WebRTC Leak Protection
   - DOMAIN-KEYWORD,stun,REJECT
   - DOMAIN-KEYWORD,turn,REJECT
   - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
-
-  # QUIC Blocking (Overseas only)
   - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
-
-  # Process-Based Routing
-  - PROCESS-NAME,Telegram.exe,Telegram
-  - PROCESS-NAME,Updater.exe,Telegram
-  - PROCESS-NAME,PikPak.exe,PikPak
-  - PROCESS-NAME,com.pikpak.app,PikPak
-
-  # Telegram Domains & IPs
-  - DOMAIN-SUFFIX,telegram.org,Telegram
-  - DOMAIN-SUFFIX,telegram.me,Telegram
-  - DOMAIN-KEYWORD,telegram,Telegram
-  - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
-  - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
-  - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
-
-  # Rule Sets
-  - RULE-SET,reject,Reject
-  - RULE-SET,pikpak,PikPak
-  - RULE-SET,proxy,Proxy
-  - RULE-SET,gfw,Proxy
-  - RULE-SET,direct,Direct
-  - RULE-SET,lancidr,Direct,no-resolve
-  - RULE-SET,cncidr,Direct,no-resolve
-
-  # GeoIP
-  - GEOIP,LAN,Direct,no-resolve
-  - GEOIP,CN,Direct,no-resolve
-
-  # Fallback
-  - MATCH,CatchAll
+  - PROCESS-NAME,Telegram.exe,telegram
+  - PROCESS-NAME,Updater.exe,telegram
+  - PROCESS-NAME,PikPak.exe,pikpak
+  - PROCESS-NAME,com.pikpak.app,pikpak
+  - DOMAIN-SUFFIX,telegram.org,telegram
+  - DOMAIN-SUFFIX,telegram.me,telegram
+  - DOMAIN-KEYWORD,telegram,telegram
+  - IP-CIDR,91.108.0.0/16,telegram,no-resolve
+  - IP-CIDR,149.154.160.0/20,telegram,no-resolve
+  - IP-CIDR6,2001:67c:4e8::/48,telegram,no-resolve
+  - RULE-SET,reject,reject
+  - RULE-SET,pikpak,pikpak
+  - RULE-SET,proxy,proxy
+  - RULE-SET,gfw,proxy
+  - RULE-SET,direct,direct
+  - RULE-SET,lancidr,direct,no-resolve
+  - RULE-SET,cncidr,direct,no-resolve
+  - GEOIP,LAN,direct,no-resolve
+  - GEOIP,CN,direct,no-resolve
+  - MATCH,catchall
