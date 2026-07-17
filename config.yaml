@@ -1,6 +1,8 @@
 # ==========================================
-# Clash 远程配置模板
-# 适用于 Sub-Store 等订阅管理工具
+# Clash.Meta Regional Extension Config
+# Version: 1.0.0
+# Compatible: Mihomo >= v1.18.0, Clash.Meta
+# Features: WebRTC Block, DNS Anti-Leak, Regional Groups, Process Routing
 # ==========================================
 
 # --- 基础设置 ---
@@ -8,100 +10,345 @@ mixed-port: 7890
 allow-lan: true
 mode: rule
 log-level: info
-ipv6: false
+ipv6: true
 external-controller: 0.0.0.0:9090
 external-ui: dashboard
+tcp-concurrent: true
 
-# --- 代理节点配置 ---
-# 使用模板变量，将在渲染时替换为实际节点
+# --- TUN 配置 (Apple TUN Compatibility) ---
+tun:
+  enable: true
+  device: Clash Mi
+  stack: gvisor
+  dns-hijack:
+    - any:53
+  auto-route: true
+  auto-detect-interface: true
+  strict-route: false
+  mtu: 1500
+
+# --- 嗅探配置 (Sniffer Convergence) ---
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+    QUIC:
+      ports: [443, 8443]
+
+# --- DNS 配置 (DNS Pipeline + IP-direct) ---
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  filter-aaaa: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-ipv6: true
+  fake-ip-range6: "fdfe:dcba:9876::/64"
+  respect-rules: true
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.apple.com"
+    - "+.icloud.com"
+    - "+.mzstatic.com"
+    - "time.*.com"
+    - "stun.*.*"
+    - "+.srv.nintendo.net"
+    - "geosite:cn"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 2400:3200::1
+  nameserver:
+    - https://dns.alidns.com/dns-query
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
+    - https://1.1.1.1/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.4.4/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+    "geosite:geolocation-!cn":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
+
+# --- 规则提供者 (Rule Providers) ---
+rule-providers:
+  reject:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
+  pikpak:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt
+  proxy:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt
+  direct:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt
+  gfw:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt
+  cncidr:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: ipcidr
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt
+  lancidr:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: ipcidr
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
+
+# --- 代理节点 ---
 proxies:
   %proxies%
 
 # --- 策略组配置 ---
 proxy-groups:
-  # 主策略组 - 自动选择最优节点
+  # 主策略组 - 节点选择
   - name: 🚀 节点选择
     type: select
     proxies:
       %primary_strategy_chain%
 
-  # 地区策略组 - 按地理位置分组
-  - name: 🌏 地区选择
+  # 自动测试组
+  - name: ⚡ 自动测试
+    type: url-test
+    interval: 180
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 30
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    proxies: []
+
+  # 故障转移组
+  - name:  故障转移
+    type: fallback
+    interval: 180
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 30
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    proxies: []
+
+  # 地区策略组
+  - name: 🇰 香港节点
+    type: url-test
+    interval: 600
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 100
+    include-all: true
+    filter: "(?=.*((香港|HK|Hong Kong|🇭🇰))).*$"
+    proxies: []
+
+  - name: 🇸🇬 新加坡节点
+    type: url-test
+    interval: 600
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 100
+    include-all: true
+    filter: "(?=.*((新加坡|SG|Singapore|🇸🇬))).*$"
+    proxies: []
+
+  - name: 🇯🇵 日本节点
+    type: url-test
+    interval: 600
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 100
+    include-all: true
+    filter: "(?=.*((日本|JP|Japan|🇯🇵))).*$"
+    proxies: []
+
+  - name: 🇸 美国节点
+    type: url-test
+    interval: 600
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 100
+    include-all: true
+    filter: "(?=.*((美国|US|United States|🇺🇸))).*$"
+    proxies: []
+
+  - name: 🇹🇼 台湾节点
+    type: url-test
+    interval: 600
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 100
+    include-all: true
+    filter: "(?=.*((台湾|TW|Tai Wan|🇹🇼))).*$"
+    proxies: []
+
+  - name: 🌐 其他节点
+    type: url-test
+    interval: 600
+    timeout: 5000
+    url: https://www.gstatic.com/generate_204
+    lazy: true
+    max-failed-times: 5
+    tolerance: 100
+    include-all: true
+    filter: "^(?!.*(香港|HK|Hong Kong|🇰|新加坡|SG|Singapore|🇸🇬|日本|JP|Japan|🇯|美国|US|United States|🇺🇸|台湾|TW|Tai Wan|🇼|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    proxies: []
+
+  # 应用策略组
+  - name:  Telegram
     type: select
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     proxies:
       %region_strategy_chain%
+      -  自动测试
+      - 🔄 故障转移
+      - 🚀 节点选择
+      - DIRECT
 
-  # 协议策略组 - 按协议类型分组
-  - name: 🔄 协议选择
+  - name: 📦 PikPak
     type: select
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     proxies:
-      %protocol_strategy_chain%
+      %region_strategy_chain%
+      -  自动测试
+      - 🔄 故障转移
+      - 🚀 节点选择
+      - DIRECT
 
-  # 所有策略组集合
-  %all_strategy_groups%
-
-  # 备用策略组 - 故障转移
-  - name: ⚡ 自动切换
-    type: fallback
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-    proxies:
-      %primary_strategy_chain%
-
-  # 直连策略
-  - name:  全球直连
+  # 基础策略组
+  - name: 🌏 全球直连
     type: select
     proxies:
       - DIRECT
-      -  节点选择
+      - 🚀 节点选择
 
-  # 广告拦截
   - name: 🛑 广告拦截
     type: select
     proxies:
       - REJECT
       - DIRECT
 
-# --- DNS 配置 ---
-dns:
-  enable: true
-  listen: 0.0.0.0:53
-  ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    - '*.lan'
-    - '*.local'
-    - '+.apple.com'
-    - '+.icloud.com'
-    - 'time.*.com'
-    - 'stun.*.*'
-  nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
-  fallback:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
+  - name:  最终选择
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ⚡ 自动测试
+      - DIRECT
+
+  - name: GLOBAL
+    type: select
+    proxies:
+      - DIRECT
+      -  节点选择
+      - ⚡ 自动测试
 
 # --- 规则配置 ---
-# 使用模板变量，将在渲染时替换为实际规则
 rules:
-  %rules%
+  # WebRTC 阻止（可选）
+  - DOMAIN-KEYWORD,stun,REJECT
+  - DOMAIN-KEYWORD,turn,REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
+  
+  # QUIC 阻止（海外）
+  - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
+  
+  # 进程规则
+  - PROCESS-NAME,Telegram.exe,📱 Telegram
+  - PROCESS-NAME,Updater.exe, Telegram
+  - PROCESS-NAME,PikPak.exe,📦 PikPak
+  - PROCESS-NAME,com.pikpak.app,📦 PikPak
+  
+  # 规则集
+  - RULE-SET,reject, 广告拦截
+  - RULE-SET,pikpak,📦 PikPak
+  
+  # Telegram 规则
+  - DOMAIN-SUFFIX,telegram.org,📱 Telegram
+  - DOMAIN-SUFFIX,telegram.me,📱 Telegram
+  - DOMAIN-KEYWORD,telegram,📱 Telegram
+  - IP-CIDR,91.108.0.0/16,📱 Telegram,no-resolve
+  - IP-CIDR,149.154.160.0/20,📱 Telegram,no-resolve
+  - IP-CIDR6,2001:67c:4e8::/48,📱 Telegram,no-resolve
+  
+  # 代理规则
+  - RULE-SET,proxy,🚀 节点选择
+  - RULE-SET,gfw,🚀 节点选择
+  
+  # 直连规则
+  - RULE-SET,direct,🌏 全球直连
+  - RULE-SET,lancidr, 全球直连,no-resolve
+  - RULE-SET,cncidr,🌏 全球直连,no-resolve
+  - GEOIP,LAN,🌏 全球直连,no-resolve
+  - GEOIP,CN, 全球直连,no-resolve
+  
+  # 最终规则
+  - MATCH,🎯 最终选择
 
-# --- 其他配置 ---
-# 配置文件元信息（用于标识）
+# --- 配置元信息 ---
 # 文件名: %file_name%
 # 目标格式: %target_format%
 # 节点数量: %node_count%
+# 地区策略组: %region_group_names%
+# 协议策略组: %protocol_group_names%
 
-# --- 分组明细信息（注释说明）---
-# 地区策略组名称列表: %region_group_names%
-# 地区策略组节点数量: %region_group_counts%
-# 地区策略组逐行清单: %region_group_list%
-# 协议策略组名称列表: %protocol_group_names%
-# 协议策略组节点数量: %protocol_group_counts%
-# 协议策略组逐行清单: %protocol_group_list%
+# --- 实验性功能 ---
+experimental:
+  quic-go-disable-ecn: true
+
+# --- 配置存储 ---
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# --- GeoX URL ---
+geox-url:
+  geoip: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat
+  mmdb: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb
+  geosite: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
