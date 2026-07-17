@@ -1,8 +1,11 @@
 # ==========================================
 # Clash Template with Placeholder Support
 # Version: 1.0.9
+# Features: No Icons, English Group Names, Chinese Filter Keywords
+# Compatible: Subconverter / Subscription Managers with YAML templating
 # ==========================================
 
+# --- Basic Settings ---
 mixed-port: 7890
 allow-lan: true
 mode: rule
@@ -11,16 +14,124 @@ ipv6: true
 external-controller: 0.0.0.0:9090
 tcp-concurrent: true
 
-# --- Metadata Comments ---
-# Filename: <%fileName%>
-# Interval: <%interval%>
-# Managed Config URL: <%managedConfigUrl%>
-# Target Format: <%targetFormat%>
-# Node Count: <%nodeCount%>
+# --- TUN Configuration ---
+tun:
+  enable: true
+  device: Clash Mi
+  stack: gvisor
+  dns-hijack:
+    - any:53
+  auto-route: true
+  auto-detect-interface: true
+  strict-route: false
+  mtu: 1500
 
+# --- Sniffer Configuration ---
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+    QUIC:
+      ports: [443, 8443]
+
+# --- DNS Configuration ---
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  filter-aaaa: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-ipv6: true
+  fake-ip-range6: "fdfe:dcba:9876::/64"
+  respect-rules: true
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.apple.com"
+    - "+.icloud.com"
+    - "+.mzstatic.com"
+    - "time.*.com"
+    - "stun.*.*"
+    - "+.srv.nintendo.net"
+    - "geosite:cn"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 2400:3200::1
+  nameserver:
+    - https://dns.alidns.com/dns-query
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
+    - https://1.1.1.1/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.4.4/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+    "geosite:geolocation-!cn":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
+
+# --- Rule Providers ---
+rule-providers:
+  reject:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
+  pikpak:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt
+  proxy:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt
+  direct:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt
+  gfw:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt
+  cncidr:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: ipcidr
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt
+  lancidr:
+    type: http
+    format: yaml
+    interval: 86400
+    behavior: ipcidr
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
+
+# --- Proxies (Placeholder) ---
 proxies:
 <%proxies%>
 
+# --- Proxy Groups (Placeholder Integration) ---
 proxy-groups:
   - name: Proxy
     type: select
@@ -90,5 +201,27 @@ proxy-groups:
       - Proxy
       - AutoTest
 
+# --- Rules (Placeholder) ---
 rules:
 <%rules%>
+
+# --- Configuration Metadata ---
+# Filename: <%fileName%>
+# Managed Config URL: <%managedConfigUrl%>
+# Target Format: <%targetFormat%>
+# Node Count: <%nodeCount%>
+
+# --- Experimental Features ---
+experimental:
+  quic-go-disable-ecn: true
+
+# --- Profile Storage ---
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# --- GeoX URL ---
+geox-url:
+  geoip: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat
+  mmdb: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb
+  geosite: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
