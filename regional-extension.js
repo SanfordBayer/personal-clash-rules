@@ -1,7 +1,8 @@
-// Clash.Meta / Mihomo Regional Extension Script v0.9.29
+// Clash.Meta / Mihomo Regional Extension Script v0.9.24
 // Filename: regional-extension.js
-// Features: Numerical UI Lock, PikPak Prioritized (Index 04), Removed TG Group
-// Optimized for: Clash Verge Rev, FlClash, Mihomo Kernel
+// Features: WebRTC, DNS Anti-Leak, Regional Groups, Process Routing, QUIC Control, Smart Filter, Fallback
+// Compatible: subconverter (&script=), Mihomo >= v1.18.0, Clash.Meta, Clash Verge, FlClash
+// Fixed: Apple platform TUN permission issues (iOS/macOS)
 
 const CONFIG = {
   PRESET: "balanced",
@@ -23,135 +24,196 @@ const CONFIG = {
   BLOCK_QUIC: "overseas",
   ENABLE_PROCESS_RULES: true,
   ENABLE_WEBRTC_BLOCK: false,
-  ENABLE_REGIONAL_GROUPS: true,
-
-  // UI 排序映射表：PikPak 提前至 04，地区组顺延
-  UI_MAP: {
-    Proxy: "01 | Proxy",
-    AutoTest: "02 | AutoTest",
-    FailOver: "03 | FailOver",
-    PikPak: "04 | PikPak",   // 提前至地区组之前
-    HK: "05 | HK",
-    SG: "06 | SG",
-    JP: "07 | JP",
-    US: "08 | US",
-    TW: "09 | TW",
-    Other: "10 | Other",
-    Direct: "11 | Direct",
-    Reject: "12 | Reject",
-    CatchAll: "13 | CatchAll",
-    GLOBAL: "14 | GLOBAL"
-  }
+  ENABLE_REGIONAL_GROUPS: true
 };
 
-const getName = (k) => CONFIG.UI_MAP[k] || k;
 const filterRegex = new RegExp(CONFIG.FILTER_KEYWORDS.join("|"), "i");
 const excludeRegex = new RegExp(CONFIG.EXCLUDE_KEYWORDS.join("|"), "i");
 const regionRegex = {
-  sg: /新加坡|SG|Singapore|🇸🇬/i,
+  sg: /新加坡|SG|Singapore|🇬/i,
   hk: /香港|HK|Hong Kong|🇭🇰/i,
   jp: /日本|JP|Japan|🇯🇵/i,
   us: /美国|US|United States|🇺🇸/i,
-  tw: /台湾|TW|Tai Wan|🇹/i
+  tw: /台湾|TW|Tai Wan|🇼/i
 };
 
+const domesticNS = ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"];
+const foreignNS = ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"];
+
 function scoreNode(name, type) {
-  let s = 0;
-  for (let k in regionRegex) { if (regionRegex[k].test(name)) { s += CONFIG.REGION_WEIGHTS[k] || 0; break; } }
+  let score = 0;
+  for (let k in regionRegex) {
+    if (regionRegex[k].test(name)) { score += CONFIG.REGION_WEIGHTS[k] || 0; break; }
+  }
   const t = (type || "").toLowerCase();
-  if (/hysteria2|hy2/.test(t)) s += 40;
-  else if (/hysteria/.test(t)) s += 35;
-  else if (/tuic/.test(t)) s += 30;
-  else if (/trojan/.test(t)) s += 25;
-  else if (/vmess|vless|ss|shadowsocks/.test(t)) s += 15;
-  return s;
+  if (/hysteria2|hy2/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.hysteria2;
+  else if (/hysteria/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.hysteria;
+  else if (/tuic/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.tuic;
+  else if (/trojan/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.trojan;
+  else if (/vmess/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.vmess;
+  else if (/vless/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.vless;
+  else if (/ss|shadowsocks/.test(t)) score += CONFIG.PROTOCOL_WEIGHTS.ss;
+  return score;
 }
 
 function main(config) {
   if (!config || typeof config !== "object") return config;
+  console.log(`[Regional-Extension] v0.9.24 start | preset:${CONFIG.PRESET}`);
 
   config.ipv6 = CONFIG.DNS_IPV6;
   config["tcp-concurrent"] = CONFIG.TCP_CONCURRENT;
-  config.tun = { enable: true, stack: "system", "auto-route": true, "auto-detect-interface": true, "dns-hijack": ["0.0.0.0:53"], "strict-route": true };
-  config.sniffer = { enable: true, "parse-pure-ip": true, sniff: { TLS: { ports: [443, 8443], "override-destination": true }, HTTP: { ports: [80, 8080], "override-destination": true }, QUIC: { ports: [443] } } };
+  config.tun = { 
+    enable: true, 
+    stack: "gvisor",  // v0.9.24: Changed from "system" for Apple compatibility
+    "auto-route": true, 
+    "auto-detect-interface": true, 
+    "dns-hijack": ["tcp://8.8.8.8:53"],  // v0.9.24: Adjusted for Apple DNS
+    "strict-route": false,  // v0.9.24: Disabled to prevent routing conflicts on iOS/macOS
+    mtu: 1500 
+  };
+  config.sniffer = { enable: true, "parse-pure-ip": true, "force-dns-mapping": true, sniff: { TLS: { ports: [443, 8443], "override-destination": true }, HTTP: { ports: [80, 8080, 8443], "override-destination": true }, QUIC: { ports: [443, 8443] } } };
 
-  // DNS
-  const domesticNS = ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"];
-  const foreignNS = ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"];
   config.dns = {
-    enable: true, listen: `0.0.0.0:${CONFIG.DNS_PORT}`, ipv6: true, "enhanced-mode": "fake-ip",
-    "respect-rules": true, "proxy-server-nameserver": [...domesticNS, "223.5.5.5"],
-    "nameserver-policy": { "geosite:cn,private": domesticNS, "geosite:geolocation-!cn": foreignNS },
-    "default-nameserver": ["223.5.5.5", "119.29.29.29"], nameserver: ["https://dns.alidns.com/dns-query"],
-    fallback: foreignNS, "fallback-filter": { geoip: true, "geoip-code": "CN" }
+    enable: true, listen: `0.0.0.0:${CONFIG.DNS_PORT}`, ipv6: true, "filter-aaaa": true,
+    "enhanced-mode": "fake-ip", "fake-ip-range": "198.18.0.1/16",
+    "fake-ip-ipv6": CONFIG.FAKE_IP_V6, "fake-ip-range6": CONFIG.FAKE_IP_V6_RANGE,
+    "respect-rules": true,
+    "fake-ip-filter": ["*.lan", "*.local", "+.msftconnecttest.com", "+.msftncsi.com", "localhost.ptlogin2.qq.com", "time.*.com", "stun.*.*", "+.srv.nintendo.net", "+.stun.playstation.net", "+.xboxlive.com", "geosite:cn"],
+    "default-nameserver": ["223.5.5.5", "119.29.29.29", "2400:3200::1"],
+    nameserver: ["https://dns.alidns.com/dns-query"],
+    "proxy-server-nameserver": ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query", "223.5.5.5", "119.29.29.29"],
+    fallback: [...foreignNS],
+    "fallback-filter": { geoip: true, "geoip-code": "CN" },
+    "nameserver-policy": { "geosite:cn,private": domesticNS, "geosite:geolocation-!cn": foreignNS }
   };
 
-  // Rule Providers
   const ruleUrl = n => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
   config["rule-providers"] = {
-    reject: { type: "http", format: "yaml", interval: 86400, behavior: "domain", url: ruleUrl("reject") },
-    pikpak: { type: "http", format: "yaml", interval: 86400, behavior: "domain", url: ruleUrl("pikpak") },
-    proxy: { type: "http", format: "yaml", interval: 86400, behavior: "domain", url: ruleUrl("proxy") },
-    direct: { type: "http", format: "yaml", interval: 86400, behavior: "domain", url: ruleUrl("direct") },
-    gfw: { type: "http", format: "yaml", interval: 86400, behavior: "domain", url: ruleUrl("gfw") },
-    cncidr: { type: "http", format: "yaml", interval: 86400, behavior: "ipcidr", url: ruleUrl("cncidr") },
-    lancidr: { type: "http", format: "yaml", interval: 86400, behavior: "ipcidr", url: ruleUrl("lancidr") }
+    reject: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("reject") },
+    pikpak: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("pikpak") },
+    proxy: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("proxy") },
+    direct: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("direct") },
+    gfw: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("gfw") },
+    cncidr: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("cncidr") },
+    lancidr: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("lancidr") }
   };
 
-  if (!config.proxies) return config;
-  config.proxies = config.proxies.filter(p => p.name && p.type && !filterRegex.test(p.name) && !excludeRegex.test(p.name));
-  
+  if (!Array.isArray(config.proxies) || config.proxies.length === 0) {
+    console.warn("[Regional-Extension] proxies invalid/empty. Injecting safe fallback config.");
+    config["proxy-groups"] = [{ name: "Proxy", type: "select", proxies: ["DIRECT"] }];
+    config.rules = ["MATCH,DIRECT"];
+    config.proxies = [];
+    return config;
+  }
+
+  const regionStats = { sg: 0, hk: 0, jp: 0, us: 0, tw: 0 };
+  config.proxies = config.proxies.filter(p => {
+    if (!p?.name || !p?.type) return false;
+    if (filterRegex.test(p.name) || excludeRegex.test(p.name)) return false;
+    for (let k in regionRegex) { if (regionRegex[k].test(p.name)) { regionStats[k]++; break; } }
+    return true;
+  });
+
+  if (config.proxies.length === 0) {
+    console.warn("[Regional-Extension] All nodes filtered out. Injecting safe fallback config.");
+    config["proxy-groups"] = [{ name: "Proxy", type: "select", proxies: ["DIRECT"] }];
+    config.rules = ["MATCH,DIRECT"];
+    return config;
+  }
+
   if (CONFIG.ENABLE_SMART_SORT) {
-    const PRIO = { hk: 1, sg: 2, us: 3, jp: 4, tw: 5 };
-    const getP = n => { for (let k in PRIO) { if (regionRegex[k].test(n)) return PRIO[k]; } return 99; };
-    config.proxies.sort((a, b) => (getP(a.name) - getP(b.name)) || (scoreNode(b.name, b.type) - scoreNode(a.name, a.type)));
-  }
-  const sortedNames = config.proxies.map(p => p.name);
-  config.proxies.forEach(p => { p.udp = true; if (CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|tuic/i.test(p.type)) p.xudp = true; });
-
-  const base = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, tolerance: 200 };
-  const groups = [];
-  const regionalKeys = ["HK", "SG", "JP", "US", "TW", "Other"];
-  const regionalNames = regionalKeys.map(getName);
-
-  // 1-3. 核心选路组
-  groups.push({ name: getName("Proxy"), type: "select", proxies: [getName("AutoTest"), getName("FailOver"), ...regionalNames, ...sortedNames, "DIRECT"] });
-  groups.push({ ...base, name: getName("AutoTest"), type: "url-test", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
-  groups.push({ ...base, name: getName("FailOver"), type: "fallback", "include-all": true, filter: `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
-
-  // 4. PikPak (全节点，SG/Proxy 置顶)
-  const pikpakBackends = [getName("SG"), getName("Proxy"), ...sortedNames, "DIRECT"];
-  groups.push({ name: getName("PikPak"), type: "select", proxies: pikpakBackends });
-
-  // 5-10. 地区组
-  if (CONFIG.ENABLE_REGIONAL_GROUPS) {
-    const rStr = { hk: "香港|HK|Hong Kong|🇭", us: "美国|US|United States|🇺🇸", tw: "台湾|TW|Tai Wan|🇹", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
-    ["hk", "sg", "jp", "us", "tw"].forEach(k => {
-      groups.push({ ...base, name: getName(k.toUpperCase()), type: "url-test", "include-all": true, filter: `(?=.*(${rStr[k]})).*$` });
+    const REGION_PRIORITY = { hk: 1, sg: 2, us: 3, jp: 4, tw: 5 };
+    function getRegionPriority(name) {
+      for (let key in REGION_PRIORITY) {
+        if (regionRegex[key].test(name)) return REGION_PRIORITY[key];
+      }
+      return 99;
+    }
+    config.proxies.sort((a, b) => {
+      const prioA = getRegionPriority(a.name);
+      const prioB = getRegionPriority(b.name);
+      if (prioA !== prioB) return prioA - prioB;
+      return scoreNode(b.name, b.type) - scoreNode(a.name, a.type);
     });
-    groups.push({ ...base, name: getName("Other"), type: "url-test", "include-all": true, filter: `^(?!.*(${Object.values(rStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$` });
   }
 
-  // 11-14. 功能组
-  groups.push({ name: getName("Direct"), type: "select", proxies: ["DIRECT"] }, { name: getName("Reject"), type: "select", proxies: ["REJECT", "DIRECT"] });
-  groups.push({ name: getName("CatchAll"), type: "select", proxies: [getName("Proxy"), getName("AutoTest"), "DIRECT"] }, { name: getName("GLOBAL"), type: "select", proxies: ["DIRECT", getName("Proxy")] });
+  const sortedProxyNames = config.proxies.map(p => p.name);
+  config.proxies.forEach(p => {
+    p.udp = true;
+    if (CONFIG.XUDP_SAFE_MODE && /vmess|trojan|hysteria|hysteria2|tuic/i.test(p.type)) p.xudp = true;
+  });
+
+  const baseGroup = { interval: 300, timeout: 5000, url: CONFIG.SPEED_TEST_URL, lazy: true, "max-failed-times": 5, tolerance: 200 };
+  const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
+  const regionStr = { hk: "香港|HK|Hong Kong|🇭🇰", us: "美国|US|United States|🇺🇸", tw: "台湾|TW|Tai Wan|🇼", jp: "日本|JP|Japan|🇯🇵", sg: "新加坡|SG|Singapore|🇸🇬" };
+  const regionRe = k => `(?=.*(${regionStr[k]})).*$`;
+  const otherFilter = `^(?!.*(${Object.values(regionStr).join("|")}|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
+
+  const groups = [];
+  const regionalLabels = CONFIG.ENABLE_REGIONAL_GROUPS ? ["HK", "SG", "JP", "US", "TW", "Other"] : [];
+
+  const mainProxies = CONFIG.ENABLE_REGIONAL_GROUPS
+    ? ["AutoTest", "FailOver", ...regionalLabels, ...sortedProxyNames, "DIRECT"]
+    : ["AutoTest", "FailOver", ...sortedProxyNames, "DIRECT"];
+  groups.push({ name: "Proxy", type: "select", proxies: mainProxies });
+
+  groups.push({ ...baseGroup, name: "AutoTest", type: "url-test", "include-all": true, filter: safeFilter });
+  groups.push({ ...baseGroup, name: "FailOver", type: "fallback", "include-all": true, filter: safeFilter });
+
+  if (CONFIG.ENABLE_REGIONAL_GROUPS) {
+    const regionOrder = ["hk", "sg", "jp", "us", "tw"];
+    const labelMap = { hk: "HK", sg: "SG", jp: "JP", us: "US", tw: "TW" };
+    regionOrder.forEach(k => {
+      groups.push({ ...baseGroup, name: labelMap[k], type: "url-test", "include-all": true, filter: regionRe(k) });
+    });
+    groups.push({ ...baseGroup, name: "Other", type: "url-test", "include-all": true, filter: otherFilter });
+  }
+
+  const appProxies = CONFIG.ENABLE_REGIONAL_GROUPS 
+    ? [...regionalLabels, "AutoTest", "FailOver", "Proxy", "DIRECT"] 
+    : ["AutoTest", "FailOver", "Proxy", "DIRECT"];
+    
+  if (CONFIG.ENABLE_PROCESS_RULES) {
+    groups.push({ name: "Telegram", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
+    groups.push({ name: "PikPak", type: "select", "include-all": true, proxies: appProxies, filter: safeFilter });
+  }
+
+  groups.push({ name: "Direct", type: "select", proxies: ["DIRECT"] });
+  groups.push({ name: "Reject", type: "select", proxies: ["REJECT", "DIRECT"] });
+  groups.push({ name: "CatchAll", type: "select", proxies: ["Proxy", "AutoTest", "DIRECT"] });
+  groups.push({ name: "GLOBAL", type: "select", proxies: ["DIRECT", "Proxy", "AutoTest"] });
 
   config["proxy-groups"] = groups;
 
-  let r = [];
-  if (CONFIG.ENABLE_WEBRTC_BLOCK) r.push("DOMAIN-KEYWORD,stun,REJECT", "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT");
-  if (CONFIG.BLOCK_QUIC === "overseas") r.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
+  let rules = [];
+  if (CONFIG.ENABLE_WEBRTC_BLOCK) {
+    rules.push("DOMAIN-KEYWORD,stun,REJECT", "DOMAIN-KEYWORD,turn,REJECT", "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT");
+  }
+  if (CONFIG.BLOCK_QUIC === "global") {
+    rules.push("AND,((NETWORK,UDP),(DST-PORT,443)),REJECT");
+  } else if (CONFIG.BLOCK_QUIC === "overseas") {
+    rules.push("AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT");
+  }
   if (CONFIG.ENABLE_PROCESS_RULES) {
-    r.push(`PROCESS-NAME,Telegram.exe,${getName("Proxy")}`, `PROCESS-NAME,PikPak.exe,${getName("PikPak")}`);
+    rules.push("PROCESS-NAME,Telegram.exe,Telegram", "PROCESS-NAME,Updater.exe,Telegram", "PROCESS-NAME,PikPak.exe,PikPak", "PROCESS-NAME,com.pikpak.app,PikPak");
   }
 
-  r.push(
-    `RULE-SET,reject,${getName("Reject")}`, `RULE-SET,pikpak,${getName("PikPak")}`,
-    `DOMAIN-KEYWORD,telegram,${getName("Proxy")}`, `IP-CIDR,91.108.0.0/16,${getName("Proxy")},no-resolve`,
-    `RULE-SET,proxy,${getName("Proxy")}`, `RULE-SET,gfw,${getName("Proxy")}`, `RULE-SET,direct,${getName("Direct")}`,
-    `GEOIP,LAN,${getName("Direct")},no-resolve`, `GEOIP,CN,${getName("Direct")},no-resolve`, `MATCH,${getName("CatchAll")}`
+  rules.push(
+    "RULE-SET,reject,Reject", "RULE-SET,pikpak,PikPak",
+    "DOMAIN-SUFFIX,telegram.org,Telegram", "DOMAIN-SUFFIX,telegram.me,Telegram", "DOMAIN-KEYWORD,telegram,Telegram",
+    "IP-CIDR,91.108.0.0/16,Telegram,no-resolve", "IP-CIDR,149.154.160.0/20,Telegram,no-resolve", "IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve",
+    "RULE-SET,proxy,Proxy", "RULE-SET,gfw,Proxy",
+    "RULE-SET,direct,Direct", "RULE-SET,lancidr,Direct,no-resolve", "RULE-SET,cncidr,Direct,no-resolve",
+    "GEOIP,LAN,Direct,no-resolve", "GEOIP,CN,Direct,no-resolve",
+    "MATCH,CatchAll"
   );
-  config.rules = r;
+  config.rules = rules;
 
+  console.log(`[Regional-Extension] v0.9.24 | Nodes:${config.proxies.length} | Rules:${rules.length} | Groups:${groups.length}`);
+  if (CONFIG.DEBUG) {
+    console.log(`[Debug] Flags: TG=${CONFIG.ENABLE_PROCESS_RULES} | QUIC=${CONFIG.BLOCK_QUIC} | WebRTC=${CONFIG.ENABLE_WEBRTC_BLOCK} | RG=${CONFIG.ENABLE_REGIONAL_GROUPS}`);
+    console.log(`[Debug] Regions:`, JSON.stringify(regionStats));
+    console.log(`[Debug] Top 3:`, config.proxies.slice(0, 3).map(p => p.name).join(", "));
+  }
   return config;
 }
