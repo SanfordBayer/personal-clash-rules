@@ -1,251 +1,55 @@
 # ==========================================
-# Clash.Meta Regional Extension Config
-# Version: 1.0.8
-# Compatible: Mihomo >= v1.18.0, Clash.Meta
-# Features: WebRTC Block, DNS Anti-Leak, Regional Groups, Process Routing
+# Clash Template with Placeholder Support
+# Version: 1.0.9
 # ==========================================
 
-# --- Basic Settings ---
 mixed-port: 7890
 allow-lan: true
 mode: rule
 log-level: info
 ipv6: true
 external-controller: 0.0.0.0:9090
-external-ui: dashboard
 tcp-concurrent: true
 
-# --- TUN Configuration (Apple TUN Compatibility) ---
-tun:
-  enable: true
-  device: Clash Mi
-  stack: gvisor
-  dns-hijack:
-    - any:53
-  auto-route: true
-  auto-detect-interface: true
-  strict-route: false
-  mtu: 1500
+# --- Metadata Comments ---
+# Filename: <%fileName%>
+# Interval: <%interval%>
+# Managed Config URL: <%managedConfigUrl%>
+# Target Format: <%targetFormat%>
+# Node Count: <%nodeCount%>
 
-# --- Sniffer Configuration (Sniffer Convergence) ---
-sniffer:
-  enable: true
-  parse-pure-ip: true
-  force-dns-mapping: true
-  sniff:
-    TLS:
-      ports: [443, 8443]
-      override-destination: true
-    QUIC:
-      ports: [443, 8443]
-
-# --- DNS Configuration (DNS Pipeline + IP-direct) ---
-dns:
-  enable: true
-  listen: 0.0.0.0:1053
-  ipv6: true
-  filter-aaaa: true
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-ipv6: true
-  fake-ip-range6: "fdfe:dcba:9876::/64"
-  respect-rules: true
-  fake-ip-filter:
-    - "*.lan"
-    - "*.local"
-    - "+.apple.com"
-    - "+.icloud.com"
-    - "+.mzstatic.com"
-    - "time.*.com"
-    - "stun.*.*"
-    - "+.srv.nintendo.net"
-    - "geosite:cn"
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-    - 2400:3200::1
-  nameserver:
-    - https://dns.alidns.com/dns-query
-  proxy-server-nameserver:
-    - https://223.5.5.5/dns-query
-    - https://1.1.1.1/dns-query
-  fallback:
-    - https://1.1.1.1/dns-query
-    - https://8.8.4.4/dns-query
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
-  nameserver-policy:
-    "geosite:cn,private":
-      - https://doh.pub/dns-query
-      - https://dns.alidns.com/dns-query
-    "geosite:geolocation-!cn":
-      - https://1.1.1.1/dns-query
-      - https://8.8.4.4/dns-query
-
-# --- Rule Providers ---
-rule-providers:
-  reject:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
-  pikpak:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt
-  proxy:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt
-  direct:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt
-  gfw:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt
-  cncidr:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: ipcidr
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt
-  lancidr:
-    type: http
-    format: yaml
-    interval: 86400
-    behavior: ipcidr
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
-
-# --- Proxies ---
 proxies:
-  %proxies%
+<%proxies%>
 
-# --- Proxy Groups ---
 proxy-groups:
-  # Primary Strategy Group - Node Selection
   - name: Proxy
     type: select
     proxies:
-      %primary_strategy_chain%
+      - AutoTest
+      - Failover
+<%regionGroupNames%>
+      - DIRECT
 
-  # Auto Test Group
   - name: AutoTest
     type: url-test
-    interval: 180
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
+    url: http://www.gstatic.com/generate_204
+    interval: <%interval%>
     tolerance: 30
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
-    proxies: []
+    proxies:
+<%regionGroupNames%>
 
-  # Failover Group
   - name: Failover
     type: fallback
-    interval: 180
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
+    url: http://www.gstatic.com/generate_204
+    interval: <%interval%>
     tolerance: 30
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
-    proxies: []
+    proxies:
+<%regionGroupNames%>
 
-  # Regional Strategy Groups
-  - name: HK
-    type: url-test
-    interval: 600
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
-    tolerance: 100
-    include-all: true
-    filter: "(?=.*((香港|HK|Hong Kong|HongKong))).*$"
-    proxies: []
-
-  - name: SG
-    type: url-test
-    interval: 600
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
-    tolerance: 100
-    include-all: true
-    filter: "(?=.*((新加坡|SG|Singapore))).*$"
-    proxies: []
-
-  - name: JP
-    type: url-test
-    interval: 600
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
-    tolerance: 100
-    include-all: true
-    filter: "(?=.*((日本|JP|Japan))).*$"
-    proxies: []
-
-  - name: US
-    type: url-test
-    interval: 600
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
-    tolerance: 100
-    include-all: true
-    filter: "(?=.*((美国|US|United States|USA))).*$"
-    proxies: []
-
-  - name: TW
-    type: url-test
-    interval: 600
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
-    tolerance: 100
-    include-all: true
-    filter: "(?=.*((台湾|TW|Tai Wan|Taiwan))).*$"
-    proxies: []
-
-  - name: Other
-    type: url-test
-    interval: 600
-    timeout: 5000
-    url: https://www.gstatic.com/generate_204
-    lazy: true
-    max-failed-times: 5
-    tolerance: 100
-    include-all: true
-    filter: "^(?!.*(香港|HK|Hong Kong|新加坡|SG|Singapore|日本|JP|Japan|美国|US|United States|台湾|TW|Tai Wan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
-    proxies: []
-
-  # Application Strategy Groups
   - name: Telegram
     type: select
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     proxies:
-      %region_strategy_chain%
+<%regionGroupNames%>
       - AutoTest
       - Failover
       - Proxy
@@ -253,16 +57,13 @@ proxy-groups:
 
   - name: PikPak
     type: select
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     proxies:
-      %region_strategy_chain%
+<%regionGroupNames%>
       - AutoTest
       - Failover
       - Proxy
       - DIRECT
 
-  # Basic Strategy Groups
   - name: Direct
     type: select
     proxies:
@@ -289,66 +90,5 @@ proxy-groups:
       - Proxy
       - AutoTest
 
-# --- Rules ---
 rules:
-  # WebRTC Block (Optional)
-  - DOMAIN-KEYWORD,stun,REJECT
-  - DOMAIN-KEYWORD,turn,REJECT
-  - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
-  
-  # QUIC Block (Overseas)
-  - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
-  
-  # Process Rules
-  - PROCESS-NAME,Telegram.exe,Telegram
-  - PROCESS-NAME,Updater.exe,Telegram
-  - PROCESS-NAME,PikPak.exe,PikPak
-  - PROCESS-NAME,com.pikpak.app,PikPak
-  
-  # Rule Sets
-  - RULE-SET,reject,Reject
-  - RULE-SET,pikpak,PikPak
-  
-  # Telegram Rules
-  - DOMAIN-SUFFIX,telegram.org,Telegram
-  - DOMAIN-SUFFIX,telegram.me,Telegram
-  - DOMAIN-KEYWORD,telegram,Telegram
-  - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
-  - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
-  - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
-  
-  # Proxy Rules
-  - RULE-SET,proxy,Proxy
-  - RULE-SET,gfw,Proxy
-  
-  # Direct Rules
-  - RULE-SET,direct,Direct
-  - RULE-SET,lancidr,Direct,no-resolve
-  - RULE-SET,cncidr,Direct,no-resolve
-  - GEOIP,LAN,Direct,no-resolve
-  - GEOIP,CN,Direct,no-resolve
-  
-  # Final Rule
-  - MATCH,CatchAll
-
-# --- Configuration Metadata ---
-# Filename: %file_name%
-# Target Format: %target_format%
-# Node Count: %node_count%
-# Regional Groups: %region_group_names%
-# Protocol Groups: %protocol_group_names%
-
-# --- Experimental Features ---
-experimental:
-  quic-go-disable-ecn: true
-
-# --- Profile Storage ---
-profile:
-  store-selected: true
-  store-fake-ip: true
-
-# --- GeoX URL ---
-geox-url:
-  geoip: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat
-  mmdb: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb
-  geosite: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
+<%rules%>
