@@ -1,8 +1,71 @@
-# ✅ 1. 加回订阅链接配置中心 (记得把 URL 换成你自己的真实订阅)
+# Clash Meta Configuration (Remote Template Edition)
+# Standalone version - Replace {YOUR_SUB_URL} with actual subscription
+# Compatible: Mihomo >= v1.18.0
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: true
+tcp-concurrent: true
+
+# TUN Mode
+tun:
+  enable: true
+  stack: gvisor
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+    - "any:53"
+  strict-route: false
+  mtu: 1500
+
+# DNS Configuration
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.apple.com"
+    - "+.icloud.com"
+    - "+.mzstatic.com"
+    - "time.*.com"
+    - "stun.*.*"
+    - "+.srv.nintendo.net"
+    - "geosite:cn"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 2400:3200::1
+  nameserver:
+    - https://dns.alidns.com/dns-query
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
+    - https://1.1.1.1/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.4.4/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+    "geosite:geolocation-!cn":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
+
+# 🛠️ 模板核心：数据源占位符
+# 客户端拉取模板后，只需在界面修改此处 URL 即可激活整个配置文件
 proxy-providers:
-  MySub:
+  TemplateSub:
     type: http
-    url: "你的实际订阅链接粘贴到这里"
+    url: "{YOUR_SUB_URL}"  # 这里是纯模板的占位符
     interval: 3600
     path: ./proxies.yaml
     health-check:
@@ -10,7 +73,6 @@ proxy-providers:
       interval: 600
       url: https://www.gstatic.com/generate_204
 
-# ✅ 2. 重构策略组 (修正 PikPak 位置与节点显示)
 proxy-groups:
   - name: proxy
     type: select
@@ -29,7 +91,7 @@ proxy-groups:
   - name: autotest
     type: url-test
     use: 
-      - MySub
+      - TemplateSub
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 180
@@ -39,18 +101,18 @@ proxy-groups:
   - name: failover
     type: fallback
     use: 
-      - MySub
+      - TemplateSub
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|0\\.1x|内测|内网|loopback)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 180
     tolerance: 30
     lazy: true
 
-  # 04 顺位：PikPak 专属组，合并展示常规控制组与所有具体节点
+  # 04 顺位专属组：全节点覆盖
   - name: PikPak
     type: select
     use: 
-      - MySub
+      - TemplateSub
     proxies:
       - proxy
       - autotest
@@ -60,7 +122,7 @@ proxy-groups:
   - name: HK
     type: url-test
     use: 
-      - MySub
+      - TemplateSub
     filter: "(?i)(香港|HK|Hong Kong|🇭🇰)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -70,7 +132,7 @@ proxy-groups:
   - name: SG
     type: url-test
     use: 
-      - MySub
+      - TemplateSub
     filter: "(?i)(新加坡|SG|Singapore|🇸🇬)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -80,7 +142,7 @@ proxy-groups:
   - name: JP
     type: url-test
     use: 
-      - MySub
+      - TemplateSub
     filter: "(?i)(日本|JP|Japan|🇯🇵)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -90,7 +152,7 @@ proxy-groups:
   - name: US
     type: url-test
     use: 
-      - MySub
+      - TemplateSub
     filter: "(?i)(美国|US|United States|🇺🇸)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -100,7 +162,7 @@ proxy-groups:
   - name: TW
     type: url-test
     use: 
-      - MySub
+      - TemplateSub
     filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -110,7 +172,7 @@ proxy-groups:
   - name: Other
     type: url-test
     use: 
-      - MySub
+      - TemplateSub
     filter: "^(?!.*(新加坡|SG|香港|HK|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
     url: https://www.gstatic.com/generate_204
     interval: 600
@@ -141,17 +203,19 @@ proxy-groups:
       - proxy
       - autotest
 
-# ✅ 3. 路由规则更新
 rules:
+  # WebRTC Protection
   - DOMAIN-KEYWORD,stun,REJECT
   - DOMAIN-KEYWORD,turn,REJECT
+  
+  # QUIC Blocking
   - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
 
-  # PikPak 专属规则指派
+  # PikPak 专属进程路由
   - PROCESS-NAME,PikPak.exe,PikPak
   - PROCESS-NAME,com.pikpak.app,PikPak
 
-  # Telegram 流量统一走全局 proxy 即可
+  # Telegram 流量默认走全局 Proxy
   - DOMAIN-SUFFIX,telegram.org,proxy
   - DOMAIN-SUFFIX,telegram.me,proxy
   - DOMAIN-KEYWORD,telegram,proxy
@@ -159,6 +223,9 @@ rules:
   - IP-CIDR,149.154.160.0/20,proxy,no-resolve
   - IP-CIDR6,2001:67c:4e8::/48,proxy,no-resolve
 
+  # Direct
   - GEOIP,LAN,direct,no-resolve
   - GEOIP,CN,direct,no-resolve
+
+  # Fallback
   - MATCH,catchall
