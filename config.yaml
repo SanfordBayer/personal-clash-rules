@@ -1,6 +1,7 @@
-# Clash Meta Configuration v0.9.26
-# Optimized by Qwen3.7: DNS IP-direct, Fake-IP trim, Sniffer convergence, Health-check decoupling
-# Compatible: Mihomo >= v1.18.0, Clash Meta, Clash Verge, FlClash, Clash Mi (iOS)
+# Clash Meta Configuration v0.9.27
+# Fixed: CRITICAL loop detected in ProxyGroup (proxy -> telegram/pikpak -> proxy)
+# Optimized: DNS IP-direct, Fake-IP trim, Sniffer convergence, Health-check decoupling
+# Compatible: Mihomo >= v1.18.0, Clash Meta, Clash Verge, FlClash, Clash Mi
 
 mixed-port: 7890
 allow-lan: true
@@ -82,6 +83,7 @@ proxy-providers:
       url: https://www.gstatic.com/generate_204
 
 proxy-groups:
+  # 🔥 CRITICAL FIX: Removed telegram and pikpak from proxy group to break the loop
   - name: proxy
     type: select
     proxies:
@@ -93,8 +95,6 @@ proxy-groups:
       - US
       - TW
       - Other
-      - telegram
-      - pikpak
       - DIRECT
 
   - name: autotest
@@ -131,7 +131,7 @@ proxy-groups:
     type: url-test
     use:
       - MySubscription
-    filter: "(?i)(新加坡|SG|Singapore|🇸🇬)"
+    filter: "(?i)(新加坡|SG|Singapore|🇬)"
     url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
@@ -161,7 +161,7 @@ proxy-groups:
     type: url-test
     use:
       - MySubscription
-    filter: "(?i)(台湾|TW|Tai Wan|🇹🇼)"
+    filter: "(?i)(台湾|TW|Tai Wan|🇹)"
     url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
