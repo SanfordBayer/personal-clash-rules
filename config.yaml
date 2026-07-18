@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.4 - Optimized for ClashMi iOS
+# Clash.Meta Config v1.1.5 - Numbered Groups for iOS ClashMi
 
 mixed-port: 7890
 allow-lan: true
@@ -80,21 +80,21 @@ rule-providers:
 proxies: []
 
 proxy-groups:
-  - name: Proxy
+  - name: "[01] Proxy"
     type: select
     include-all: true
     proxies:
-      - AutoTest
-      - Failover
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
+      - "[02] AutoTest"
+      - "[03] Failover"
+      - "[04] HK"
+      - "[05] SG"
+      - "[06] JP"
+      - "[07] US"
+      - "[08] TW"
+      - "[09] Other"
       - DIRECT
 
-  - name: AutoTest
+  - name: "[02] AutoTest"
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 180
@@ -102,7 +102,7 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  - name: Failover
+  - name: "[03] Failover"
     type: fallback
     url: http://www.gstatic.com/generate_204
     interval: 180
@@ -110,7 +110,7 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  - name: HK
+  - name: "[04] HK"
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 600
@@ -118,7 +118,7 @@ proxy-groups:
     include-all: true
     filter: "(?i)(香港|HK|Hong Kong)"
 
-  - name: SG
+  - name: "[05] SG"
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 600
@@ -126,7 +126,7 @@ proxy-groups:
     include-all: true
     filter: "(?i)(新加坡|SG|Singapore)"
 
-  - name: JP
+  - name: "[06] JP"
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 600
@@ -134,7 +134,7 @@ proxy-groups:
     include-all: true
     filter: "(?i)(日本|JP|Japan)"
 
-  - name: US
+  - name: "[07] US"
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 600
@@ -142,7 +142,7 @@ proxy-groups:
     include-all: true
     filter: "(?i)(美国|US|United States)"
 
-  - name: TW
+  - name: "[08] TW"
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 600
@@ -150,7 +150,7 @@ proxy-groups:
     include-all: true
     filter: "(?i)(台湾|TW|Taiwan)"
 
-  - name: Other
+  - name: "[09] Other"
     type: url-test
     url: http://www.gstatic.com/generate_204
     interval: 600
@@ -158,34 +158,34 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  - name: Direct
+  - name: "[10] Direct"
     type: select
-    proxies: [DIRECT, Proxy]
+    proxies: [DIRECT, "[01] Proxy"]
 
-  - name: Reject
+  - name: "[11] Reject"
     type: select
     proxies: [REJECT, DIRECT]
 
-  - name: CatchAll
+  - name: "[12] CatchAll"
     type: select
-    proxies: [Proxy, AutoTest, DIRECT]
+    proxies: ["[01] Proxy", "[02] AutoTest", DIRECT]
 
-  - name: GLOBAL
+  - name: "[13] GLOBAL"
     type: select
-    proxies: [DIRECT, Proxy, AutoTest]
+    proxies: [DIRECT, "[01] Proxy", "[02] AutoTest"]
 
 rules:
   - DOMAIN-KEYWORD,stun,REJECT
   - DOMAIN-KEYWORD,turn,REJECT
   - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
   - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
-  - RULE-SET,reject,Reject
-  - RULE-SET,proxy,Proxy
-  - RULE-SET,gfw,Proxy
-  - RULE-SET,direct,Direct
-  - RULE-SET,cncidr,Direct
-  - GEOIP,CN,Direct
-  - MATCH,CatchAll
+  - RULE-SET,reject,[11] Reject
+  - RULE-SET,proxy,[01] Proxy
+  - RULE-SET,gfw,[01] Proxy
+  - RULE-SET,direct,[10] Direct
+  - RULE-SET,cncidr,[10] Direct
+  - GEOIP,CN,[10] Direct
+  - MATCH,[12] CatchAll
 
 profile:
   store-selected: true
