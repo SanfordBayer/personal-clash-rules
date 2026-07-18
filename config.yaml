@@ -1,7 +1,7 @@
 # ==========================================
 # Clash.Meta Standard Remote Configuration
-# Version: 1.1.2
-# Features: No Icons, English Group Names, Fixed Loop Reference
+# Version: 1.1.3
+# Features: No Icons, English Group Names, Removed App Groups
 # Compatible: Mihomo >= v1.18.0, Clash.Meta, Clash Verge, FlClash
 # ==========================================
 
@@ -130,7 +130,7 @@ rule-providers:
 # --- Proxies ---
 proxies: []
 
-# --- Proxy Groups (Fixed Loop Reference) ---
+# --- Proxy Groups (Removed App Groups) ---
 proxy-groups:
   # 1. Primary Strategy Group
   - name: Proxy
@@ -138,8 +138,6 @@ proxy-groups:
     proxies:
       - AutoTest
       - Failover
-      - PikPak
-      - Telegram
       - HK
       - SG
       - JP
@@ -170,34 +168,7 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  # 4. Application Groups (Fixed: Removed Proxy reference to avoid loop)
-  - name: PikPak
-    type: select
-    proxies:
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - AutoTest
-      - Failover
-      - DIRECT
-
-  - name: Telegram
-    type: select
-    proxies:
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - AutoTest
-      - Failover
-      - DIRECT
-
-  # 5. Regional Groups
+  # 4. Regional Groups
   - name: HK
     type: url-test
     url: http://www.gstatic.com/generate_204
@@ -258,7 +229,7 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(香港|HK|Hong Kong|新加坡|SG|Singapore|日本|JP|Japan|美国|US|United States|台湾|TW|Tai Wan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  # 6. Basic Groups
+  # 5. Basic Groups
   - name: Direct
     type: select
     proxies:
@@ -295,25 +266,9 @@ rules:
   # QUIC Block (Overseas)
   - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
 
-  # Process Routing
-  - PROCESS-NAME,Telegram.exe,Telegram
-  - PROCESS-NAME,Updater.exe,Telegram
-  - PROCESS-NAME,PikPak.exe,PikPak
-  - PROCESS-NAME,com.pikpak.app,PikPak
-
   # Rule Sets
   - RULE-SET,reject,Reject
-  - RULE-SET,pikpak,PikPak
-
-  # Telegram Rules
-  - DOMAIN-SUFFIX,telegram.org,Telegram
-  - DOMAIN-SUFFIX,telegram.me,Telegram
-  - DOMAIN-KEYWORD,telegram,Telegram
-  - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
-  - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
-  - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
-
-  # Proxy Rules
+  - RULE-SET,pikpak,Proxy
   - RULE-SET,proxy,Proxy
   - RULE-SET,gfw,Proxy
 
