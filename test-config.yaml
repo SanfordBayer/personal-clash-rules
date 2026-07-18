@@ -1,0 +1,239 @@
+# Clash.Meta Config v1.1.7-test - App Groups Test
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: true
+external-controller: 0.0.0.0:9090
+tcp-concurrent: true
+
+tun:
+  enable: true
+  stack: gvisor
+  dns-hijack: ["any:53"]
+  auto-route: true
+  auto-detect-interface: true
+
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  force-dns-mapping: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+      override-destination: true
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.apple.com"
+    - "+.icloud.com"
+    - "time.*.com"
+    - "stun.*.*"
+    - "geosite:cn"
+  nameserver:
+    - https://dns.alidns.com/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.4.4/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+  nameserver-policy:
+    "geosite:cn,private": ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"]
+    "geosite:geolocation-!cn": ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"]
+
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
+    interval: 86400
+  pikpak:
+    type: http
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt
+    interval: 86400
+  proxy:
+    type: http
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt
+    interval: 86400
+  direct:
+    type: http
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt
+    interval: 86400
+  gfw:
+    type: http
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt
+    interval: 86400
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt
+    interval: 86400
+
+proxies: []
+
+proxy-groups:
+  - name: "[01] Proxy"
+    type: select
+    include-all: true
+    proxies:
+      - "[02] AutoTest"
+      - "[03] Failover"
+      - "[10] Telegram"
+      - "[11] PikPak"
+      - "[04] HK"
+      - "[05] SG"
+      - "[06] JP"
+      - "[07] US"
+      - "[08] TW"
+      - "[09] Other"
+
+  - name: "[02] AutoTest"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 180
+    tolerance: 30
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+
+  - name: "[03] Failover"
+    type: fallback
+    url: http://www.gstatic.com/generate_204
+    interval: 180
+    tolerance: 30
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+
+  - name: "[04] HK"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    include-all: true
+    filter: "(?i)(香港|HK|Hong Kong)"
+
+  - name: "[05] SG"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    include-all: true
+    filter: "(?i)(新加坡|SG|Singapore)"
+
+  - name: "[06] JP"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    include-all: true
+    filter: "(?i)(日本|JP|Japan)"
+
+  - name: "[07] US"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    include-all: true
+    filter: "(?i)(美国|US|United States)"
+
+  - name: "[08] TW"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    include-all: true
+    filter: "(?i)(台湾|TW|Taiwan)"
+
+  - name: "[09] Other"
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    include-all: true
+    filter: "^(?!.*(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+
+  # 应用策略组 - 测试版（关键：不包含 Proxy 组，避免循环）
+  - name: "[10] Telegram"
+    type: select
+    include-all: true
+    filter: "(?i)(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW)"
+    proxies:
+      - "[04] HK"
+      - "[05] SG"
+      - "[06] JP"
+      - "[07] US"
+      - "[08] TW"
+      - "[09] Other"
+      - "[02] AutoTest"
+      - "[03] Failover"
+      - DIRECT
+
+  - name: "[11] PikPak"
+    type: select
+    include-all: true
+    filter: "(?i)(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW)"
+    proxies:
+      - "[04] HK"
+      - "[05] SG"
+      - "[06] JP"
+      - "[07] US"
+      - "[08] TW"
+      - "[09] Other"
+      - "[02] AutoTest"
+      - "[03] Failover"
+      - DIRECT
+
+  - name: "[12] Direct"
+    type: select
+    proxies: [DIRECT, "[01] Proxy"]
+
+  - name: "[13] Reject"
+    type: select
+    proxies: [REJECT, DIRECT]
+
+  - name: "[14] CatchAll"
+    type: select
+    proxies: ["[01] Proxy", "[02] AutoTest", DIRECT]
+
+  - name: "[15] GLOBAL"
+    type: select
+    proxies: [DIRECT, "[01] Proxy", "[02] AutoTest"]
+
+rules:
+  - DOMAIN-KEYWORD,stun,REJECT
+  - DOMAIN-KEYWORD,turn,REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
+  
+  # 应用进程规则
+  - PROCESS-NAME,Telegram.exe,[10] Telegram
+  - PROCESS-NAME,Telegram,[10] Telegram
+  - PROCESS-NAME,com.tdesktop.Telegram,[10] Telegram
+  - PROCESS-NAME,PikPak.exe,[11] PikPak
+  - PROCESS-NAME,com.pikpak.app,[11] PikPak
+  
+  # 规则集
+  - RULE-SET,reject,[13] Reject
+  - RULE-SET,pikpak,[11] PikPak
+  - RULE-SET,proxy,[01] Proxy
+  - RULE-SET,gfw,[01] Proxy
+  - RULE-SET,direct,[12] Direct
+  - RULE-SET,cncidr,[12] Direct
+  - GEOIP,CN,[12] Direct
+  - MATCH,[14] CatchAll
+
+profile:
+  store-selected: true
+  store-fake-ip: true
