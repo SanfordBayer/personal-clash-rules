@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.6 - DIRECT at End
+# Clash.Meta Config v1.1.7-test - App Groups Test
 
 mixed-port: 7890
 allow-lan: true
@@ -56,6 +56,11 @@ rule-providers:
     behavior: domain
     url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
     interval: 86400
+  pikpak:
+    type: http
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt
+    interval: 86400
   proxy:
     type: http
     behavior: domain
@@ -83,10 +88,11 @@ proxy-groups:
   - name: "[01] Proxy"
     type: select
     include-all: true
-    filter: ""
     proxies:
       - "[02] AutoTest"
       - "[03] Failover"
+      - "[10] Telegram"
+      - "[11] PikPak"
       - "[04] HK"
       - "[05] SG"
       - "[06] JP"
@@ -158,19 +164,50 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  - name: "[10] Direct"
+  # 应用策略组 - 测试版（关键：不包含 Proxy 组，避免循环）
+  - name: "[10] Telegram"
+    type: select
+    include-all: true
+    filter: "(?i)(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW)"
+    proxies:
+      - "[04] HK"
+      - "[05] SG"
+      - "[06] JP"
+      - "[07] US"
+      - "[08] TW"
+      - "[09] Other"
+      - "[02] AutoTest"
+      - "[03] Failover"
+      - DIRECT
+
+  - name: "[11] PikPak"
+    type: select
+    include-all: true
+    filter: "(?i)(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW)"
+    proxies:
+      - "[04] HK"
+      - "[05] SG"
+      - "[06] JP"
+      - "[07] US"
+      - "[08] TW"
+      - "[09] Other"
+      - "[02] AutoTest"
+      - "[03] Failover"
+      - DIRECT
+
+  - name: "[12] Direct"
     type: select
     proxies: [DIRECT, "[01] Proxy"]
 
-  - name: "[11] Reject"
+  - name: "[13] Reject"
     type: select
     proxies: [REJECT, DIRECT]
 
-  - name: "[12] CatchAll"
+  - name: "[14] CatchAll"
     type: select
     proxies: ["[01] Proxy", "[02] AutoTest", DIRECT]
 
-  - name: "[13] GLOBAL"
+  - name: "[15] GLOBAL"
     type: select
     proxies: [DIRECT, "[01] Proxy", "[02] AutoTest"]
 
@@ -179,13 +216,23 @@ rules:
   - DOMAIN-KEYWORD,turn,REJECT
   - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
   - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
-  - RULE-SET,reject,[11] Reject
+  
+  # 应用进程规则
+  - PROCESS-NAME,Telegram.exe,[10] Telegram
+  - PROCESS-NAME,Telegram,[10] Telegram
+  - PROCESS-NAME,com.tdesktop.Telegram,[10] Telegram
+  - PROCESS-NAME,PikPak.exe,[11] PikPak
+  - PROCESS-NAME,com.pikpak.app,[11] PikPak
+  
+  # 规则集
+  - RULE-SET,reject,[13] Reject
+  - RULE-SET,pikpak,[11] PikPak
   - RULE-SET,proxy,[01] Proxy
   - RULE-SET,gfw,[01] Proxy
-  - RULE-SET,direct,[10] Direct
-  - RULE-SET,cncidr,[10] Direct
-  - GEOIP,CN,[10] Direct
-  - MATCH,[12] CatchAll
+  - RULE-SET,direct,[12] Direct
+  - RULE-SET,cncidr,[12] Direct
+  - GEOIP,CN,[12] Direct
+  - MATCH,[14] CatchAll
 
 profile:
   store-selected: true
