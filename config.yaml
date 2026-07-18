@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.5 - Numbered Groups for iOS ClashMi
+# Clash.Meta Config v1.1.6 - DIRECT at End
 
 mixed-port: 7890
 allow-lan: true
@@ -83,6 +83,7 @@ proxy-groups:
   - name: "[01] Proxy"
     type: select
     include-all: true
+    filter: ""
     proxies:
       - "[02] AutoTest"
       - "[03] Failover"
@@ -92,7 +93,6 @@ proxy-groups:
       - "[07] US"
       - "[08] TW"
       - "[09] Other"
-      - DIRECT
 
   - name: "[02] AutoTest"
     type: url-test
