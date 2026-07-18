@@ -1,8 +1,8 @@
 # ==========================================
-# Clash Template with Placeholder Support
-# Version: 1.0.9
+# Clash.Meta Standard Remote Configuration
+# Version: 1.1.0
 # Features: No Icons, English Group Names, Chinese Filter Keywords
-# Compatible: Subconverter / Subscription Managers with YAML templating
+# Compatible: Mihomo >= v1.18.0, Clash.Meta, Clash Verge, FlClash
 # ==========================================
 
 # --- Basic Settings ---
@@ -127,40 +127,120 @@ rule-providers:
     behavior: ipcidr
     url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
 
-# --- Proxies (Placeholder) ---
-proxies:
-<%proxies%>
+# --- Proxies ---
+# Note: Subscription converters or clients will automatically inject nodes here.
+# If managing manually, add your nodes below this line.
+proxies: []
 
-# --- Proxy Groups (Placeholder Integration) ---
+# --- Proxy Groups ---
 proxy-groups:
+  # Primary Strategy Group
   - name: Proxy
     type: select
     proxies:
       - AutoTest
       - Failover
-<%regionGroupNames%>
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
       - DIRECT
 
+  # Auto Test Group (Filters out invalid nodes using Chinese keywords)
   - name: AutoTest
     type: url-test
     url: http://www.gstatic.com/generate_204
-    interval: <%interval%>
+    interval: 180
     tolerance: 30
-    proxies:
-<%regionGroupNames%>
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
+  # Failover Group (Filters out invalid nodes using Chinese keywords)
   - name: Failover
     type: fallback
     url: http://www.gstatic.com/generate_204
-    interval: <%interval%>
+    interval: 180
     tolerance: 30
-    proxies:
-<%regionGroupNames%>
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
+  # Regional Strategy Groups
+  - name: HK
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "(?i)(香港|HK|Hong Kong|HongKong)"
+
+  - name: SG
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "(?i)(新加坡|SG|Singapore)"
+
+  - name: JP
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "(?i)(日本|JP|Japan)"
+
+  - name: US
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "(?i)(美国|US|United States|USA)"
+
+  - name: TW
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "(?i)(台湾|TW|Tai Wan|Taiwan)"
+
+  - name: Other
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 100
+    lazy: true
+    max-failed-times: 5
+    include-all: true
+    filter: "^(?!.*(香港|HK|Hong Kong|新加坡|SG|Singapore|日本|JP|Japan|美国|US|United States|台湾|TW|Tai Wan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+
+  # Application Strategy Groups
   - name: Telegram
     type: select
     proxies:
-<%regionGroupNames%>
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
       - AutoTest
       - Failover
       - Proxy
@@ -169,12 +249,18 @@ proxy-groups:
   - name: PikPak
     type: select
     proxies:
-<%regionGroupNames%>
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
       - AutoTest
       - Failover
       - Proxy
       - DIRECT
 
+  # Basic Strategy Groups
   - name: Direct
     type: select
     proxies:
@@ -201,15 +287,47 @@ proxy-groups:
       - Proxy
       - AutoTest
 
-# --- Rules (Placeholder) ---
+# --- Rules ---
 rules:
-<%rules%>
+  # WebRTC Block
+  - DOMAIN-KEYWORD,stun,REJECT
+  - DOMAIN-KEYWORD,turn,REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
 
-# --- Configuration Metadata ---
-# Filename: <%fileName%>
-# Managed Config URL: <%managedConfigUrl%>
-# Target Format: <%targetFormat%>
-# Node Count: <%nodeCount%>
+  # QUIC Block (Overseas)
+  - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
+
+  # Process Routing
+  - PROCESS-NAME,Telegram.exe,Telegram
+  - PROCESS-NAME,Updater.exe,Telegram
+  - PROCESS-NAME,PikPak.exe,PikPak
+  - PROCESS-NAME,com.pikpak.app,PikPak
+
+  # Rule Sets
+  - RULE-SET,reject,Reject
+  - RULE-SET,pikpak,PikPak
+
+  # Telegram Rules
+  - DOMAIN-SUFFIX,telegram.org,Telegram
+  - DOMAIN-SUFFIX,telegram.me,Telegram
+  - DOMAIN-KEYWORD,telegram,Telegram
+  - IP-CIDR,91.108.0.0/16,Telegram,no-resolve
+  - IP-CIDR,149.154.160.0/20,Telegram,no-resolve
+  - IP-CIDR6,2001:67c:4e8::/48,Telegram,no-resolve
+
+  # Proxy Rules
+  - RULE-SET,proxy,Proxy
+  - RULE-SET,gfw,Proxy
+
+  # Direct Rules
+  - RULE-SET,direct,Direct
+  - RULE-SET,lancidr,Direct,no-resolve
+  - RULE-SET,cncidr,Direct,no-resolve
+  - GEOIP,LAN,Direct,no-resolve
+  - GEOIP,CN,Direct,no-resolve
+
+  # Final Rule
+  - MATCH,CatchAll
 
 # --- Experimental Features ---
 experimental:
