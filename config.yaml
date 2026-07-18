@@ -1,7 +1,7 @@
 # ==========================================
 # Clash.Meta Standard Remote Configuration
-# Version: 1.1.0
-# Features: No Icons, English Group Names, Chinese Filter Keywords
+# Version: 1.1.1
+# Features: No Icons, English Group Names, Optimized Group Order
 # Compatible: Mihomo >= v1.18.0, Clash.Meta, Clash Verge, FlClash
 # ==========================================
 
@@ -128,18 +128,18 @@ rule-providers:
     url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
 
 # --- Proxies ---
-# Note: Subscription converters or clients will automatically inject nodes here.
-# If managing manually, add your nodes below this line.
 proxies: []
 
-# --- Proxy Groups ---
+# --- Proxy Groups (Optimized Order) ---
 proxy-groups:
-  # Primary Strategy Group
+  # 1. Primary Strategy Group
   - name: Proxy
     type: select
     proxies:
       - AutoTest
       - Failover
+      - PikPak
+      - Telegram
       - HK
       - SG
       - JP
@@ -148,7 +148,7 @@ proxy-groups:
       - Other
       - DIRECT
 
-  # Auto Test Group (Filters out invalid nodes using Chinese keywords)
+  # 2. Auto Test Group
   - name: AutoTest
     type: url-test
     url: http://www.gstatic.com/generate_204
@@ -159,7 +159,7 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  # Failover Group (Filters out invalid nodes using Chinese keywords)
+  # 3. Failover Group (故障转移)
   - name: Failover
     type: fallback
     url: http://www.gstatic.com/generate_204
@@ -170,7 +170,36 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  # Regional Strategy Groups
+  # 4. Application Groups (应用规则组)
+  - name: PikPak
+    type: select
+    proxies:
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - AutoTest
+      - Failover
+      - Proxy
+      - DIRECT
+
+  - name: Telegram
+    type: select
+    proxies:
+      - HK
+      - SG
+      - JP
+      - US
+      - TW
+      - Other
+      - AutoTest
+      - Failover
+      - Proxy
+      - DIRECT
+
+  # 5. Regional Groups (地区规则组)
   - name: HK
     type: url-test
     url: http://www.gstatic.com/generate_204
@@ -231,36 +260,7 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(香港|HK|Hong Kong|新加坡|SG|Singapore|日本|JP|Japan|美国|US|United States|台湾|TW|Tai Wan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  # Application Strategy Groups
-  - name: Telegram
-    type: select
-    proxies:
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - AutoTest
-      - Failover
-      - Proxy
-      - DIRECT
-
-  - name: PikPak
-    type: select
-    proxies:
-      - HK
-      - SG
-      - JP
-      - US
-      - TW
-      - Other
-      - AutoTest
-      - Failover
-      - Proxy
-      - DIRECT
-
-  # Basic Strategy Groups
+  # 6. Basic Groups (基础策略组 - 放到最后)
   - name: Direct
     type: select
     proxies:
@@ -326,7 +326,7 @@ rules:
   - GEOIP,LAN,Direct,no-resolve
   - GEOIP,CN,Direct,no-resolve
 
-  # Final Rule
+  # Final Rule (CatchAll - 兜底规则)
   - MATCH,CatchAll
 
 # --- Experimental Features ---
