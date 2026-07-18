@@ -1,10 +1,10 @@
-# Clash.Meta Config v1.1.10 - HTTPS Speedtest (No DNS Hijack, No Leak)
+# Clash.Meta Config v1.1.11 - Fixed Speedtest & DNS Strategy
 
 mixed-port: 7890
 allow-lan: true
 mode: rule
 log-level: info
-ipv6: true
+ipv6: false
 external-controller: 0.0.0.0:9090
 tcp-concurrent: true
 
@@ -27,58 +27,75 @@ sniffer:
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  ipv6: true
+  ipv6: false
+  respect-rules: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
-    - "*.lan"
-    - "*.local"
-    - "+.apple.com"
-    - "+.icloud.com"
+    - "+.lan"
+    - "+.local"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "localhost.ptlogin2.qq.com"
+    - "localhost.sec.qq.com"
+    - "+.in-addr.arpa"
+    - "+.ip6.arpa"
     - "time.*.com"
-    - "stun.*.*"
-    - "geosite:cn"
-    - "www.gstatic.com"
+    - "time.*.gov"
+    - "pool.ntp.org"
+    - "localhost.work.weixin.qq.com"
+  # 纯 IP，用于解析 DNS 服务器本身的域名，防止死锁
+  default-nameserver:
+    - 223.5.5.5
+    - 1.2.4.8
+  # 默认使用国外 DNS，防止测速域名被国内 DNS 污染
   nameserver:
-    - https://doh.pub/dns-query
-    - https://dns.alidns.com/dns-query
-  fallback:
     - https://1.1.1.1/dns-query
     - https://8.8.4.4/dns-query
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
-  # 关键：强制 Clash 内部使用海外 DNS 解析测速域名，不依赖系统 DNS
+  # 代理服务器(节点)的域名解析使用国内 DNS，连接更快
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
+    - https://doh.pub/dns-query
+  # 直连流量使用国内 DNS
+  direct-nameserver:
+    - https://223.5.5.5/dns-query
+    - https://doh.pub/dns-query
+  # 核心：国内和私有域名强制走国内 DNS，其余走默认(国外)
   nameserver-policy:
-    "www.gstatic.com":
-      - https://1.1.1.1/dns-query
-      - https://8.8.4.4/dns-query
+    "geosite:cn,private":
+      - https://223.5.5.5/dns-query
+      - https://doh.pub/dns-query
 
 rule-providers:
   reject:
     type: http
     behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
+    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
     interval: 86400
   proxy:
     type: http
     behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt
+    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt
     interval: 86400
   direct:
     type: http
     behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt
+    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt
     interval: 86400
   gfw:
     type: http
     behavior: domain
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt
+    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt
     interval: 86400
   cncidr:
     type: http
     behavior: ipcidr
-    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt
+    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt
+    interval: 86400
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
     interval: 86400
 
 proxies: []
@@ -99,65 +116,71 @@ proxy-groups:
 
   - name: "[02] AutoTest"
     type: url-test
-    # 改用 HTTPS 测速，防 80 端口封锁
-    url: https://www.gstatic.com/generate_204
-    interval: 180
-    tolerance: 30
+    url: https://www.google.com/generate_204
+    interval: 120
+    timeout: 3000
+    tolerance: 50
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
   - name: "[03] Failover"
     type: fallback
-    url: https://www.gstatic.com/generate_204
-    interval: 180
-    tolerance: 30
+    url: https://www.google.com/generate_204
+    interval: 120
+    timeout: 3000
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
   - name: "[04] HK"
     type: url-test
-    url: https://www.gstatic.com/generate_204
-    interval: 600
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
     tolerance: 100
     include-all: true
     filter: "(?i)(香港|HK|Hong Kong)"
 
   - name: "[05] SG"
     type: url-test
-    url: https://www.gstatic.com/generate_204
-    interval: 600
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
     tolerance: 100
     include-all: true
     filter: "(?i)(新加坡|SG|Singapore)"
 
   - name: "[06] JP"
     type: url-test
-    url: https://www.gstatic.com/generate_204
-    interval: 600
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
     tolerance: 100
     include-all: true
     filter: "(?i)(日本|JP|Japan)"
 
   - name: "[07] US"
     type: url-test
-    url: https://www.gstatic.com/generate_204
-    interval: 600
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
     tolerance: 100
     include-all: true
     filter: "(?i)(美国|US|United States)"
 
   - name: "[08] TW"
     type: url-test
-    url: https://www.gstatic.com/generate_204
-    interval: 600
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
     tolerance: 100
     include-all: true
     filter: "(?i)(台湾|TW|Taiwan)"
 
   - name: "[09] Other"
     type: url-test
-    url: https://www.gstatic.com/generate_204
-    interval: 600
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
     tolerance: 100
     include-all: true
     filter: "^(?!.*(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
@@ -187,8 +210,9 @@ rules:
   - RULE-SET,proxy,[01] Proxy
   - RULE-SET,gfw,[01] Proxy
   - RULE-SET,direct,[10] Direct
-  - RULE-SET,cncidr,[10] Direct
-  - GEOIP,CN,[10] Direct
+  - RULE-SET,lancidr,[10] Direct,no-resolve
+  - RULE-SET,cncidr,[10] Direct,no-resolve
+  - GEOIP,CN,[10] Direct,no-resolve
   - MATCH,[12] CatchAll
 
 profile:
