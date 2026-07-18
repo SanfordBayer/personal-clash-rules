@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.6 - DIRECT at End
+# Clash.Meta Config v1.1.8 - Stable Release (No App Groups, Fixed DNS)
 
 mixed-port: 7890
 allow-lan: true
@@ -11,7 +11,7 @@ tcp-concurrent: true
 tun:
   enable: true
   stack: gvisor
-  dns-hijack: ["any:53"]
+  dns-hijack: []
   auto-route: true
   auto-detect-interface: true
 
@@ -30,6 +30,7 @@ dns:
   ipv6: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  # 关键：将测速域名加入白名单，防止 fake-ip 导致测速失败
   fake-ip-filter:
     - "*.lan"
     - "*.local"
@@ -38,17 +39,29 @@ dns:
     - "time.*.com"
     - "stun.*.*"
     - "geosite:cn"
+    - "www.gstatic.com"
+    - "cp.cloudflare.com"
+  # 国内 DNS
   nameserver:
+    - https://doh.pub/dns-query
     - https://dns.alidns.com/dns-query
+  # 海外 DNS (用于解析测速域名和代理流量)
   fallback:
     - https://1.1.1.1/dns-query
     - https://8.8.4.4/dns-query
   fallback-filter:
     geoip: true
     geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+  # 强制测速域名走海外 DNS
   nameserver-policy:
-    "geosite:cn,private": ["https://doh.pub/dns-query", "https://dns.alidns.com/dns-query"]
-    "geosite:geolocation-!cn": ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"]
+    "www.gstatic.com":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
+    "geosite:cn":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
 
 rule-providers:
   reject:
@@ -83,7 +96,6 @@ proxy-groups:
   - name: "[01] Proxy"
     type: select
     include-all: true
-    filter: ""
     proxies:
       - "[02] AutoTest"
       - "[03] Failover"
