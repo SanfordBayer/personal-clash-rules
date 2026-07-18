@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.9 - IP Speedtest (No DNS Hijack Required)
+# Clash.Meta Config v1.1.10 - HTTPS Speedtest (No DNS Hijack, No Leak)
 
 mixed-port: 7890
 allow-lan: true
@@ -38,6 +38,7 @@ dns:
     - "time.*.com"
     - "stun.*.*"
     - "geosite:cn"
+    - "www.gstatic.com"
   nameserver:
     - https://doh.pub/dns-query
     - https://dns.alidns.com/dns-query
@@ -47,6 +48,11 @@ dns:
   fallback-filter:
     geoip: true
     geoip-code: CN
+  # 关键：强制 Clash 内部使用海外 DNS 解析测速域名，不依赖系统 DNS
+  nameserver-policy:
+    "www.gstatic.com":
+      - https://1.1.1.1/dns-query
+      - https://8.8.4.4/dns-query
 
 rule-providers:
   reject:
@@ -93,8 +99,8 @@ proxy-groups:
 
   - name: "[02] AutoTest"
     type: url-test
-    # 核心修复：使用 Cloudflare IP 直接测速，绕过 DNS 解析
-    url: http://1.1.1.1/generate_204
+    # 改用 HTTPS 测速，防 80 端口封锁
+    url: https://www.gstatic.com/generate_204
     interval: 180
     tolerance: 30
     include-all: true
@@ -102,7 +108,7 @@ proxy-groups:
 
   - name: "[03] Failover"
     type: fallback
-    url: http://1.1.1.1/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 180
     tolerance: 30
     include-all: true
@@ -110,7 +116,7 @@ proxy-groups:
 
   - name: "[04] HK"
     type: url-test
-    url: http://1.1.1.1/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
     include-all: true
@@ -118,7 +124,7 @@ proxy-groups:
 
   - name: "[05] SG"
     type: url-test
-    url: http://1.1.1.1/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
     include-all: true
@@ -126,7 +132,7 @@ proxy-groups:
 
   - name: "[06] JP"
     type: url-test
-    url: http://1.1.1.1/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
     include-all: true
@@ -134,7 +140,7 @@ proxy-groups:
 
   - name: "[07] US"
     type: url-test
-    url: http://1.1.1.1/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
     include-all: true
@@ -142,7 +148,7 @@ proxy-groups:
 
   - name: "[08] TW"
     type: url-test
-    url: http://1.1.1.1/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
     include-all: true
@@ -150,7 +156,7 @@ proxy-groups:
 
   - name: "[09] Other"
     type: url-test
-    url: http://1.1.1.1/generate_204
+    url: https://www.gstatic.com/generate_204
     interval: 600
     tolerance: 100
     include-all: true
