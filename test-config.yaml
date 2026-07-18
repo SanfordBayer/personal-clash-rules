@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.12-test - App Groups Test (No Loop Reference)
+# Clash.Meta Config v1.1.13-test - Multi-Platform TUN Compatibility (PC & iOS)
 
 mixed-port: 7890
 allow-lan: true
@@ -8,12 +8,18 @@ ipv6: false
 external-controller: 0.0.0.0:9090
 tcp-concurrent: true
 
+# --- TUN Configuration (Core Fix for Multi-Platform) ---
 tun:
   enable: true
   stack: gvisor
+  # 关键修复：开启严格路由模式
+  # 强制所有流量（含 DNS）走 TUN 接口，从底层防泄露，且兼容 iOS
+  strict-route: true
+  # 保持为空，防止 iOS 报错
   dns-hijack: []
   auto-route: true
   auto-detect-interface: true
+  mtu: 9000
 
 sniffer:
   enable: true
@@ -67,11 +73,6 @@ rule-providers:
     behavior: domain
     url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt
     interval: 86400
-  pikpak:
-    type: http
-    behavior: domain
-    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/pikpak.txt
-    interval: 86400
   proxy:
     type: http
     behavior: domain
@@ -97,11 +98,6 @@ rule-providers:
     behavior: ipcidr
     url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
     interval: 86400
-  telegramcidr:
-    type: http
-    behavior: ipcidr
-    url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt
-    interval: 86400
 
 proxies: []
 
@@ -112,8 +108,6 @@ proxy-groups:
     proxies:
       - "[02] AutoTest"
       - "[03] Failover"
-      - "[10] Telegram"
-      - "[11] PikPak"
       - "[04] HK"
       - "[05] SG"
       - "[06] JP"
@@ -192,54 +186,19 @@ proxy-groups:
     include-all: true
     filter: "^(?!.*(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
 
-  # ==========================================
-  # 应用策略组 (测试版)
-  # 核心防循环机制：此处绝对不包含 "[01] Proxy"
-  # ==========================================
-  - name: "[10] Telegram"
-    type: select
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
-    proxies:
-      - "[04] HK"
-      - "[05] SG"
-      - "[06] JP"
-      - "[07] US"
-      - "[08] TW"
-      - "[09] Other"
-      - "[02] AutoTest"
-      - "[03] Failover"
-      - DIRECT
-
-  - name: "[11] PikPak"
-    type: select
-    include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
-    proxies:
-      - "[04] HK"
-      - "[05] SG"
-      - "[06] JP"
-      - "[07] US"
-      - "[08] TW"
-      - "[09] Other"
-      - "[02] AutoTest"
-      - "[03] Failover"
-      - DIRECT
-  # ==========================================
-
-  - name: "[12] Direct"
+  - name: "[10] Direct"
     type: select
     proxies: [DIRECT, "[01] Proxy"]
 
-  - name: "[13] Reject"
+  - name: "[11] Reject"
     type: select
     proxies: [REJECT, DIRECT]
 
-  - name: "[14] CatchAll"
+  - name: "[12] CatchAll"
     type: select
     proxies: ["[01] Proxy", "[02] AutoTest", DIRECT]
 
-  - name: "[15] GLOBAL"
+  - name: "[13] GLOBAL"
     type: select
     proxies: [DIRECT, "[01] Proxy", "[02] AutoTest"]
 
@@ -248,25 +207,14 @@ rules:
   - DOMAIN-KEYWORD,turn,REJECT
   - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
   - AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT
-  
-  # 应用进程路由规则
-  - PROCESS-NAME,Telegram.exe,[10] Telegram
-  - PROCESS-NAME,Telegram,[10] Telegram
-  - PROCESS-NAME,com.tdesktop.Telegram,[10] Telegram
-  - PROCESS-NAME,PikPak.exe,[11] PikPak
-  - PROCESS-NAME,com.pikpak.app,[11] PikPak
-  
-  # 规则集
-  - RULE-SET,reject,[13] Reject
-  - RULE-SET,pikpak,[11] PikPak
+  - RULE-SET,reject,[11] Reject
   - RULE-SET,proxy,[01] Proxy
   - RULE-SET,gfw,[01] Proxy
-  - RULE-SET,direct,[12] Direct
-  - RULE-SET,lancidr,[12] Direct,no-resolve
-  - RULE-SET,cncidr,[12] Direct,no-resolve
-  - RULE-SET,telegramcidr,[10] Telegram,no-resolve
-  - GEOIP,CN,[12] Direct,no-resolve
-  - MATCH,[14] CatchAll
+  - RULE-SET,direct,[10] Direct
+  - RULE-SET,lancidr,[10] Direct,no-resolve
+  - RULE-SET,cncidr,[10] Direct,no-resolve
+  - GEOIP,CN,[10] Direct,no-resolve
+  - MATCH,[12] CatchAll
 
 profile:
   store-selected: true
