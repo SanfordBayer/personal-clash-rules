@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.11 - Fixed Speedtest & DNS Strategy
+# Clash.Meta Config v1.1.14 - Fixed US Group & Filters
 
 mixed-port: 7890
 allow-lan: true
@@ -11,9 +11,11 @@ tcp-concurrent: true
 tun:
   enable: true
   stack: gvisor
+  strict-route: true
   dns-hijack: []
   auto-route: true
   auto-detect-interface: true
+  mtu: 9000
 
 sniffer:
   enable: true
@@ -44,23 +46,18 @@ dns:
     - "time.*.gov"
     - "pool.ntp.org"
     - "localhost.work.weixin.qq.com"
-  # 纯 IP，用于解析 DNS 服务器本身的域名，防止死锁
   default-nameserver:
     - 223.5.5.5
     - 1.2.4.8
-  # 默认使用国外 DNS，防止测速域名被国内 DNS 污染
   nameserver:
     - https://1.1.1.1/dns-query
     - https://8.8.4.4/dns-query
-  # 代理服务器(节点)的域名解析使用国内 DNS，连接更快
   proxy-server-nameserver:
     - https://223.5.5.5/dns-query
     - https://doh.pub/dns-query
-  # 直连流量使用国内 DNS
   direct-nameserver:
     - https://223.5.5.5/dns-query
     - https://doh.pub/dns-query
-  # 核心：国内和私有域名强制走国内 DNS，其余走默认(国外)
   nameserver-policy:
     "geosite:cn,private":
       - https://223.5.5.5/dns-query
@@ -103,7 +100,8 @@ proxies: []
 proxy-groups:
   - name: "[01] Proxy"
     type: select
-    include-all: true
+    # 注意：为了界面整洁和过滤垃圾节点，这里不再使用 include-all
+    # 请在 [02] AutoTest 或地区组中选择具体节点
     proxies:
       - "[02] AutoTest"
       - "[03] Failover"
@@ -113,6 +111,7 @@ proxy-groups:
       - "[07] US"
       - "[08] TW"
       - "[09] Other"
+      - DIRECT
 
   - name: "[02] AutoTest"
     type: url-test
@@ -121,7 +120,8 @@ proxy-groups:
     timeout: 3000
     tolerance: 50
     include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    # 增强过滤：加入“重置”
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
   - name: "[03] Failover"
     type: fallback
@@ -129,7 +129,7 @@ proxy-groups:
     interval: 120
     timeout: 3000
     include-all: true
-    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
   - name: "[04] HK"
     type: url-test
@@ -165,7 +165,8 @@ proxy-groups:
     timeout: 3000
     tolerance: 100
     include-all: true
-    filter: "(?i)(美国|US|United States)"
+    # 修复：加入 America 和 USA
+    filter: "(?i)(美国|US|United States|America|USA)"
 
   - name: "[08] TW"
     type: url-test
@@ -183,7 +184,8 @@ proxy-groups:
     timeout: 3000
     tolerance: 100
     include-all: true
-    filter: "^(?!.*(香港|HK|新加坡|SG|日本|JP|美国|US|台湾|TW|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期)).*$"
+    # 修复：排除列表加入 America|USA
+    filter: "^(?!.*(香港|HK|Hong Kong|新加坡|SG|Singapore|日本|JP|Japan|美国|US|United States|America|USA|台湾|TW|Taiwan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
   - name: "[10] Direct"
     type: select
