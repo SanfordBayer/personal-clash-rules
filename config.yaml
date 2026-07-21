@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.15 - Fixed Missing Nodes in Proxy Group
+# Clash.Meta Config v1.1.15 - Final Stable Release
 
 mixed-port: 7890
 allow-lan: true
@@ -100,7 +100,6 @@ proxies: []
 proxy-groups:
   - name: "[01] Proxy"
     type: select
-    # 关键修复：必须保留 include-all: true
     include-all: true
     proxies:
       - "[02] AutoTest"
@@ -119,7 +118,6 @@ proxy-groups:
     interval: 120
     timeout: 3000
     tolerance: 50
-    # 必须保留 include-all: true（url-test 不能包含其他组，但需要包含所有节点）
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
@@ -128,7 +126,6 @@ proxy-groups:
     url: https://www.google.com/generate_204
     interval: 120
     timeout: 3000
-    # 必须保留 include-all: true
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
