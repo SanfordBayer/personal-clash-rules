@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.14 - Fixed US Group & Filters
+# Clash.Meta Config v1.1.15 - Fixed Missing Nodes in Proxy Group
 
 mixed-port: 7890
 allow-lan: true
@@ -100,8 +100,8 @@ proxies: []
 proxy-groups:
   - name: "[01] Proxy"
     type: select
-    # 注意：为了界面整洁和过滤垃圾节点，这里不再使用 include-all
-    # 请在 [02] AutoTest 或地区组中选择具体节点
+    # 关键修复：必须保留 include-all: true
+    include-all: true
     proxies:
       - "[02] AutoTest"
       - "[03] Failover"
@@ -119,8 +119,8 @@ proxy-groups:
     interval: 120
     timeout: 3000
     tolerance: 50
+    # 必须保留 include-all: true（url-test 不能包含其他组，但需要包含所有节点）
     include-all: true
-    # 增强过滤：加入“重置”
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
   - name: "[03] Failover"
@@ -128,6 +128,7 @@ proxy-groups:
     url: https://www.google.com/generate_204
     interval: 120
     timeout: 3000
+    # 必须保留 include-all: true
     include-all: true
     filter: "^(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
@@ -165,7 +166,6 @@ proxy-groups:
     timeout: 3000
     tolerance: 100
     include-all: true
-    # 修复：加入 America 和 USA
     filter: "(?i)(美国|US|United States|America|USA)"
 
   - name: "[08] TW"
@@ -184,7 +184,6 @@ proxy-groups:
     timeout: 3000
     tolerance: 100
     include-all: true
-    # 修复：排除列表加入 America|USA
     filter: "^(?!.*(香港|HK|Hong Kong|新加坡|SG|Singapore|日本|JP|Japan|美国|US|United States|America|USA|台湾|TW|Taiwan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$"
 
   - name: "[10] Direct"
