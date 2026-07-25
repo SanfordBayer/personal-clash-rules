@@ -1,4 +1,4 @@
-# Clash.Meta Config v1.1.15 - Final Stable Release
+# Clash.Meta Config v1.1.16 - MTU Fix + Apple Fake-IP Whitelist (Minimal Patch over v1.1.15)
 
 mixed-port: 7890
 allow-lan: true
@@ -12,10 +12,10 @@ tun:
   enable: true
   stack: gvisor
   strict-route: true
-  dns-hijack: []
+  dns-hijack: []            # 保持空：iOS ClashMi 兼容（靠 strict-route 兜底防泄漏）
   auto-route: true
   auto-detect-interface: true
-  mtu: 9000
+  mtu: 1500                 # 修复：9000 巨型帧在移动/公网会丢包卡死，回归标准 1500
 
 sniffer:
   enable: true
@@ -36,6 +36,9 @@ dns:
   fake-ip-filter:
     - "+.lan"
     - "+.local"
+    - "+.apple.com"         # 增强：苹果服务不走 Fake-IP，iCloud/推送/商店更稳
+    - "+.icloud.com"        # 增强
+    - "+.mzstatic.com"      # 增强
     - "+.msftconnecttest.com"
     - "+.msftncsi.com"
     - "localhost.ptlogin2.qq.com"
@@ -46,10 +49,10 @@ dns:
     - "time.*.gov"
     - "pool.ntp.org"
     - "localhost.work.weixin.qq.com"
-  default-nameserver:
+  default-nameserver:       # 纯 IP 引导，IP 形式 DoH 无冷启动死锁问题
     - 223.5.5.5
     - 1.2.4.8
-  nameserver:
+  nameserver:               # 保持国外：测速全绿的实测结论，勿改国内
     - https://1.1.1.1/dns-query
     - https://8.8.4.4/dns-query
   proxy-server-nameserver:
@@ -95,7 +98,7 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
     interval: 86400
 
-proxies: []
+proxies: []   # 占位：节点由转换器/客户端订阅注入，include-all 抓取
 
 proxy-groups:
   - name: "[01] Proxy"
