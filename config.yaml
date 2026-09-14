@@ -1,242 +1,82 @@
-// ==========================================
-// Clash.Meta Regional Extension Script
-// Version: 1.1.17 (Patch - Regex Precision + Empty Group Fallback)
-// Aligned with: config v1.1.16 YAML -> v1.1.17 optimized
-// Changelog:
-// - Fix: US/HK/SG/JP/TW regex \b boundary, fix AUS/RUSSIA false positive as US
-// - Fix: Empty regional groups fallback to DIRECT to avoid client crash
-// - Opt: Other filter synced with new precise regex
-// Compatible: Sub-Store, Mihomo >= v1.18.0, Clash.Meta, Clash Verge, FlClash, Clash Mi
-// ==========================================
+# ==========================================
+# Clash.Meta Regional Config - YAML Final
+# Version: 1.2.0-final (Fixed AND error)
+# Fix: 删除 AND,((NETWORK,UDP)) 避免 proxy [UDP] not found
+# ==========================================
+mixed-port: 7890
+socks-port: 7891
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+ipv6: false
+tcp-concurrent: true
+unified-delay: true
+keep-alive-interval: 30
+profile:
+  store-selected: true
+  store-fake-ip: true
 
-const CONFIG = {
-  DEBUG: false,
-  DNS_PORT: 1053,
-  MTU: 1500,
-  FILTER_KEYWORDS: ["官网", "套餐", "流量", "异常", "剩余", "过期", "失效", "维护", "高倍", "倍率", "测试", "Test", "备用", "到期", "重置"],
-  SPEED_TEST_URL: "https://www.google.com/generate_204",
-  RULE_BASE_URL: "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release",
-  RULE_UPDATE_INTERVAL: 86400,
-};
+tun:
+  enable: true
+  stack: gvisor
+  strict-route: true
+  dns-hijack: []
+  auto-route: true
+  auto-detect-interface: true
+  mtu: 1500
 
-const filterRegex = new RegExp(CONFIG.FILTER_KEYWORDS.join("|"), "i");
-// v1.1.17 修复：加入 \b 词边界，解决 US 匹配 AUS/RUSSIA/BUSINESS 的误杀
-const regionRegex = {
-  hk: /香港|\bHK\b|Hong Kong/i,
-  sg: /新加坡|\bSG\b|Singapore/i,
-  jp: /日本|\bJP\b|Japan/i,
-  us: /美国|\bUS\b|United States|America|\bUSA\b/i,
-  tw: /台湾|\bTW\b|Taiwan/i
-};
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080-8088]
 
-function main(config) {
-  if (!config || typeof config!== "object") return config;
-  console.log("[Regional-Extension v1.1.17] Start processing...");
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  respect-rules: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+        - '+.lan'
+        - '+.local'
+        - '+.apple.com'
+        - '+.icloud.com'
+        - '+.mzstatic.com'
+        - '+.msftconnecttest.com'
+        - '+.msftncsi.com'
+        - 'localhost.ptlogin2.qq.com'
+        - 'localhost.sec.qq.com'
+        - '+.in-addr.arpa'
+        - '+.ip6.arpa'
+        - 'time.*.com'
+        - 'time.*.gov'
+        - 'pool.ntp.org'
+  default-nameserver: [223.5.5.5, 1.2.4.8]
+  nameserver: [https://1.1.1.1/dns-query, https://8.8.4.4/dns-query]
+  proxy-server-nameserver: [https://223.5.5.5/dns-query, https://doh.pub/dns-query]
+  direct-nameserver: [https://223.5.5.5/dns-query, https://doh.pub/dns-query]
+  nameserver-policy:
+    "geosite:cn,private": [https://223.5.5.5/dns-query, https://doh.pub/dns-query]
 
-  // 1. Basic Settings
-  config.mode = "rule";
-  config.ipv6 = false;
-  config["tcp-concurrent"] = true;
-  config["log-level"] = "info";
+proxies:
 
-  // 2. TUN Configuration
-  config.tun = {
-    enable: true,
-    stack: "gvisor",
-    "strict-route": true,
-    "dns-hijack": [],
-    "auto-route": true,
-    "auto-detect-interface": true,
-    mtu: CONFIG.MTU
-  };
-
-  // 3. Sniffer
-  config.sniffer = {
-    enable: true,
-    "parse-pure-ip": true,
-    "force-dns-mapping": true,
-    sniff: {
-      TLS: { ports: [443, 8443], "override-destination": true }
-    }
-  };
-
-  // 4. DNS Configuration
-  config.dns = {
-    enable: true,
-    listen: `0.0.0.0:${CONFIG.DNS_PORT}`,
-    ipv6: false,
-    "respect-rules": true,
-    "enhanced-mode": "fake-ip",
-    "fake-ip-range": "198.18.0.1/16",
-    "fake-ip-filter": [
-      "+.lan", "+.local",
-      "+.apple.com", "+.icloud.com", "+.mzstatic.com",
-      "+.msftconnecttest.com", "+.msftncsi.com",
-      "localhost.ptlogin2.qq.com", "localhost.sec.qq.com",
-      "+.in-addr.arpa", "+.ip6.arpa",
-      "time.*.com", "time.*.gov", "pool.ntp.org",
-      "localhost.work.weixin.qq.com"
-    ],
-    "default-nameserver": ["223.5.5.5", "1.2.4.8"],
-    nameserver: ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"],
-    "proxy-server-nameserver": ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"],
-    "direct-nameserver": ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"],
-    "nameserver-policy": {
-      "geosite:cn,private": ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"]
-    }
-  };
-
-  // 5. Rule Providers
-  const ruleUrl = (n) => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
-  config["rule-providers"] = {
-    reject: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("reject") },
-    proxy: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("proxy") },
-    direct: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("direct") },
-    gfw: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("gfw") },
-    cncidr: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("cncidr") },
-    lancidr: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("lancidr") }
-  };
-
-  // 6. Proxy Filtering & Validation
-  if (!Array.isArray(config.proxies) || config.proxies.length === 0) {
-    console.warn("[Regional-Extension] No valid proxies found. Injecting safe fallback.");
-    config["proxy-groups"] = [{ name: "[01] Proxy", type: "select", proxies: ["DIRECT"] }];
-    config.rules = ["MATCH,DIRECT"];
-    return config;
-  }
-
-  config.proxies = config.proxies.filter(p => {
-    if (!p?.name ||!p?.type) return false;
-    if (filterRegex.test(p.name)) return false;
-    p.udp = true;
-    return true;
-  });
-
-  if (config.proxies.length === 0) {
-    console.warn("[Regional-Extension] All nodes filtered out. Injecting safe fallback.");
-    config["proxy-groups"] = [{ name: "[01] Proxy", type: "select", proxies: ["DIRECT"] }];
-    config.rules = ["MATCH,DIRECT"];
-    return config;
-  }
-
-  // 7. Proxy Groups (Numbered, No Icons)
-  const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
-  // v1.1.17: Other 组使用带 \b 的精确匹配，防止 AUS 被算进 US
-  const otherFilter = `^(?!.*(香港|\\bHK\\b|Hong Kong|新加坡|\\bSG\\b|Singapore|日本|\\bJP\\b|Japan|美国|\\bUS\\b|United States|America|\\bUSA\\b|台湾|\\bTW\\b|Taiwan|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
-
-  const groups = [];
-  const hasNodes = (regex) => config.proxies.some(p => regex.test(p.name));
-
-  // [01] Proxy
-  groups.push({
-    name: "[01] Proxy",
-    type: "select",
-    "include-all": true,
-    proxies: ["[02] AutoTest", "[03] Failover", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]
-  });
-
-  // [02] AutoTest & [03] Failover
-  groups.push({
-    name: "[02] AutoTest",
-    type: "url-test",
-    url: CONFIG.SPEED_TEST_URL,
-    interval: 120,
-    timeout: 3000,
-    tolerance: 50,
-    "include-all": true,
-    filter: safeFilter
-  });
-  groups.push({
-    name: "[03] Failover",
-    type: "fallback",
-    url: CONFIG.SPEED_TEST_URL,
-    interval: 120,
-    timeout: 3000,
-    "include-all": true,
-    filter: safeFilter
-  });
-
-  // [04]-[08] Regional Groups with empty fallback
-  ["hk", "sg", "jp", "us", "tw"].forEach((k, i) => {
-    const regex = regionRegex[k];
-    if (!hasNodes(regex)) {
-      console.log(`[Regional-Extension] Region ${k.toUpperCase()} empty, fallback to DIRECT`);
-      groups.push({
-        name: `[0${4 + i}] ${k.toUpperCase()}`,
-        type: "select",
-        proxies: ["DIRECT", "[01] Proxy"]
-      });
-    } else {
-      groups.push({
-        name: `[0${4 + i}] ${k.toUpperCase()}`,
-        type: "url-test",
-        url: CONFIG.SPEED_TEST_URL,
-        interval: 300,
-        timeout: 3000,
-        tolerance: 100,
-        "include-all": true,
-        filter: regex.source
-      });
-    }
-  });
-
-  // [09] Other
-  const otherRegex = new RegExp(otherFilter.slice(6, -4).split('|').slice(0,5).join('|'), 'i'); // 粗略检测，实际用 otherFilter
-  // 更准确的检测：直接看过滤后是否还有节点
-  const hasOther = config.proxies.some(p => {
-    // 手动判断不属于5大区且不含过滤词
-    return!Object.values(regionRegex).some(r => r.test(p.name));
-  });
-  if (!hasOther) {
-    groups.push({ name: "[09] Other", type: "select", proxies: ["DIRECT", "[01] Proxy"] });
-  } else {
-    groups.push({
-      name: "[09] Other",
-      type: "url-test",
-      url: CONFIG.SPEED_TEST_URL,
-      interval: 300,
-      timeout: 3000,
-      tolerance: 100,
-      "include-all": true,
-      filter: otherFilter
-    });
-  }
-
-  // [10]-[13] Basic Groups
-  groups.push({ name: "[10] Direct", type: "select", proxies: ["DIRECT", "[01] Proxy"] });
-  groups.push({ name: "[11] Reject", type: "select", proxies: ["REJECT", "DIRECT"] });
-  groups.push({ name: "[12] CatchAll", type: "select", proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"] });
-  groups.push({ name: "[13] GLOBAL", type: "select", proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"] });
-
-  config["proxy-groups"] = groups;
-
-  // 8. Rules
-  const rules = [
-    "DOMAIN-KEYWORD,stun,REJECT",
-    "DOMAIN-KEYWORD,turn,REJECT",
-    "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT",
-    "AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT",
-    "RULE-SET,reject,[11] Reject",
-    "RULE-SET,proxy,[01] Proxy",
-    "RULE-SET,gfw,[01] Proxy",
-    "RULE-SET,direct,[10] Direct",
-    "RULE-SET,lancidr,[10] Direct,no-resolve",
-    "RULE-SET,cncidr,[10] Direct,no-resolve",
-    "GEOIP,CN,[10] Direct,no-resolve",
-    "MATCH,[12] CatchAll"
-  ];
-  config.rules = rules;
-
-  // 9. Profile Storage
-  config.profile = {
-    "store-selected": true,
-    "store-fake-ip": true
-  };
-
-  console.log(`[Regional-Extension v1.1.17] Success | Nodes: ${config.proxies.length} | Rules: ${rules.length} | Groups: ${groups.length}`);
-  if (CONFIG.DEBUG) {
-    console.log(`[Debug] MTU=${CONFIG.MTU} | SpeedTest=${CONFIG.SPEED_TEST_URL}`);
-    console.log(`[Debug] Top 3:`, config.proxies.slice(0, 3).map(p => p.name).join(", "));
-  }
-  return config;
-}
+proxy-groups:
+    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
+    - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, timeout: 3000, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, timeout: 3000, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[04] HK", type: url-test, url: https://www.google.com/generate_204, interval: 300, timeout: 3000, tolerance: 100, include-all: true, filter: '(?i)香港|\bHK\b|Hong Kong'}
+    - {name: "[05] SG", type: url-test, url: https://www.google.com/generate_204, interval: 300, timeout: 3000, tolerance: 100, include-all: true, filter: '(?i)新加坡|\bSG\b|Singapore'}
+    - {name: "[06] JP", type: url-test, url: https://www.google.com/generate_204, interval: 300, timeout: 3000, tolerance: 100, include-all: true, filter: '(?i)日本|\bJP\b|Japan'}
+    - {name: "[07] US", type: url-test, url: https://www.google.com/generate_204, interval: 300, timeout: 3000, tolerance: 100, include-all: true, filter: '(?i)美国|\bUS\b|United States|America|\bUSA\b'}
+    - {name: "[08] TW", type: url-test, url: https://www.google.com/generate_204, interval: 300, timeout: 3000, tolerance: 100, include-all: true, filter: '(?i)台湾|\bTW\b|Taiwan'}
+    - {name: "[09] Other", type: url-test, url: https://www.google.com/generate_204, interval: 300, timeout: 3000, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(香港|\bHK\b|Hong Kong|新加坡|\bSG\b|Singapore|日本|\bJP\b|Japan|美国|\bUS\b|United States|America|\bUSA\b|台湾|\bTW\b|Taiwan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[10] Telegram", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
+    - {name: "[11] PikPak", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
+    - {name: "[12] Twitter", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
