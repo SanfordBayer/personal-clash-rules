@@ -1,228 +1,166 @@
-// ==========================================
-// Clash.Meta Regional Extension Script
-// Version: 1.2.0-beta (Major - Service Groups)
-// Aligned with: v1.1.17 -> v1.2.0-beta
-// Features:
-// - Added: [10] Telegram, [11] PikPak, [12] Twitter, [13] YouTube, [14] AI
-// - AI Group includes: ChatGPT, OpenAI, Gemini, Qwen, Claude, Grok, Meta AI, Perplexity, Poe, DeepSeek etc.
-// - Preserved: Numbered prefix [01]-[18] to force UI ordering
-// - Fixed: v1.1.17 regex precision retained
-// Compatible: Sub-Store, Mihomo >= v1.18.0
-// ==========================================
+# ==========================================
+# Clash.Meta Regional Config - YAML Version
+# Version: 1.2.0-beta (YAML)
+# Groups: [01]-[18] Numbered English, Force Order
+# Includes: Telegram, PikPak, Twitter, YouTube, AI (含 Meta AI)
+# ==========================================
 
-const CONFIG = {
-  DEBUG: false,
-  DNS_PORT: 1053,
-  MTU: 1500,
-  FILTER_KEYWORDS: ["官网", "套餐", "流量", "异常", "剩余", "过期", "失效", "维护", "高倍", "倍率", "测试", "Test", "备用", "到期", "重置"],
-  SPEED_TEST_URL: "https://www.google.com/generate_204",
-  RULE_BASE_URL: "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release",
-  SERVICE_RULE_BASE: "https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash",
-  AI_RULE_URL: "https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/AI.yaml",
-  RULE_UPDATE_INTERVAL: 86400,
-};
+mixed-port: 7890
+socks-port: 7891
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+ipv6: false
+tcp-concurrent: true
+unified-delay: true
+keep-alive-interval: 30
+profile:
+  store-selected: true
+  store-fake-ip: true
 
-const filterRegex = new RegExp(CONFIG.FILTER_KEYWORDS.join("|"), "i");
-const regionRegex = {
-  hk: /香港|\bHK\b|Hong Kong/i,
-  sg: /新加坡|\bSG\b|Singapore/i,
-  jp: /日本|\bJP\b|Japan/i,
-  us: /美国|\bUS\b|United States|America|\bUSA\b/i,
-  tw: /台湾|\bTW\b|Taiwan/i
-};
+tun:
+  enable: true
+  stack: gvisor
+  strict-route: true
+  dns-hijack: []
+  auto-route: true
+  auto-detect-interface: true
+  mtu: 1500
 
-function main(config) {
-  if (!config || typeof config!== "object") return config;
-  console.log("[Regional-Extension v1.2.0-beta] Start processing...");
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080-8088]
 
-  // 1. Basic
-  config.mode = "rule";
-  config.ipv6 = false;
-  config["tcp-concurrent"] = true;
-  config["log-level"] = "info";
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  respect-rules: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+        - '+.lan'
+        - '+.local'
+        - '+.apple.com'
+        - '+.icloud.com'
+        - '+.mzstatic.com'
+        - '+.msftconnecttest.com'
+        - '+.msftncsi.com'
+        - 'localhost.ptlogin2.qq.com'
+        - 'localhost.sec.qq.com'
+        - '+.in-addr.arpa'
+        - '+.ip6.arpa'
+        - 'time.*.com'
+        - 'time.*.gov'
+        - 'pool.ntp.org'
+  default-nameserver:
+        - 223.5.5.5
+        - 1.2.4.8
+  nameserver:
+        - https://1.1.1.1/dns-query
+        - https://8.8.4.4/dns-query
+  proxy-server-nameserver:
+        - https://223.5.5.5/dns-query
+        - https://doh.pub/dns-query
+  direct-nameserver:
+        - https://223.5.5.5/dns-query
+        - https://doh.pub/dns-query
+  nameserver-policy:
+    "geosite:cn,private":
+            - https://223.5.5.5/dns-query
+            - https://doh.pub/dns-query
 
-  // 2. TUN
-  config.tun = {
-    enable: true,
-    stack: "gvisor",
-    "strict-route": true,
-    "dns-hijack": [],
-    "auto-route": true,
-    "auto-detect-interface": true,
-    mtu: CONFIG.MTU
-  };
+# Sub-Store 会自动填充这里，留空就行
+proxies:
 
-  // 3. Sniffer
-  config.sniffer = {
-    enable: true,
-    "parse-pure-ip": true,
-    "force-dns-mapping": true,
-    sniff: { TLS: { ports: [443, 8443], "override-destination": true } }
-  };
-
-  // 4. DNS
-  config.dns = {
-    enable: true,
-    listen: `0.0.0.0:${CONFIG.DNS_PORT}`,
-    ipv6: false,
-    "respect-rules": true,
-    "enhanced-mode": "fake-ip",
-    "fake-ip-range": "198.18.0.1/16",
-    "fake-ip-filter": [
-      "+.lan", "+.local",
-      "+.apple.com", "+.icloud.com", "+.mzstatic.com",
-      "+.msftconnecttest.com", "+.msftncsi.com",
-      "localhost.ptlogin2.qq.com", "localhost.sec.qq.com",
-      "+.in-addr.arpa", "+.ip6.arpa",
-      "time.*.com", "time.*.gov", "pool.ntp.org",
-      "localhost.work.weixin.qq.com"
-    ],
-    "default-nameserver": ["223.5.5.5", "1.2.4.8"],
-    nameserver: ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"],
-    "proxy-server-nameserver": ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"],
-    "direct-nameserver": ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"],
-    "nameserver-policy": {
-      "geosite:cn,private": ["https://223.5.5.5/dns-query", "https://doh.pub/dns-query"]
-    }
-  };
-
-  // 5. Rule Providers
-  const ruleUrl = (n) => `${CONFIG.RULE_BASE_URL}/${n}.txt`;
-  const serviceUrl = (n) => `${CONFIG.SERVICE_RULE_BASE}/${n}/${n}.yaml`;
-
-  config["rule-providers"] = {
-    reject: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("reject") },
-    proxy: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("proxy") },
-    direct: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("direct") },
-    gfw: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: ruleUrl("gfw") },
-    cncidr: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("cncidr") },
-    lancidr: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("lancidr") },
-    // Service Providers - v1.2.0-beta new
-    telegram: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: serviceUrl("Telegram") },
-    telegramcidr: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "ipcidr", url: ruleUrl("telegramcidr") },
-    twitter: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: serviceUrl("Twitter") },
-    youtube: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: serviceUrl("YouTube") },
-    pikpak: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: serviceUrl("PikPak") },
-    ai: { type: "http", format: "yaml", interval: CONFIG.RULE_UPDATE_INTERVAL, behavior: "domain", url: CONFIG.AI_RULE_URL }
-  };
-
-  // 6. Proxy Filtering
-  if (!Array.isArray(config.proxies) || config.proxies.length === 0) {
-    config["proxy-groups"] = [{ name: "[01] Proxy", type: "select", proxies: ["DIRECT"] }];
-    config.rules = ["MATCH,DIRECT"];
-    return config;
-  }
-  config.proxies = config.proxies.filter(p => {
-    if (!p?.name ||!p?.type) return false;
-    if (filterRegex.test(p.name)) return false;
-    p.udp = true;
-    return true;
-  });
-  if (config.proxies.length === 0) {
-    config["proxy-groups"] = [{ name: "[01] Proxy", type: "select", proxies: ["DIRECT"] }];
-    config.rules = ["MATCH,DIRECT"];
-    return config;
-  }
-
-  // 7. Proxy Groups - v1.2.0 18 groups
-  const safeFilter = `^(?!.*(${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
-  const otherFilter = `^(?!.*(香港|\\bHK\\b|Hong Kong|新加坡|\\bSG\\b|Singapore|日本|\\bJP\\b|Japan|美国|\\bUS\\b|United States|America|\\bUSA\\b|台湾|\\bTW\\b|Taiwan|${CONFIG.FILTER_KEYWORDS.join("|")})).*$`;
-  const hasNodes = (regex) => config.proxies.some(p => regex.test(p.name));
-  const groups = [];
-
-  // [01]-[03] Core
-  groups.push({
-    name: "[01] Proxy", type: "select", "include-all": true,
+proxy-groups:
+    - name: "[01] Proxy"
+    type: select
+    include-all: true
     proxies: ["[02] AutoTest", "[03] Failover", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]
-  });
-  groups.push({ name: "[02] AutoTest", type: "url-test", url: CONFIG.SPEED_TEST_URL, interval: 120, timeout: 3000, tolerance: 50, "include-all": true, filter: safeFilter });
-  groups.push({ name: "[03] Failover", type: "fallback", url: CONFIG.SPEED_TEST_URL, interval: 120, timeout: 3000, "include-all": true, filter: safeFilter });
 
-  // [04]-[09] Regional with empty fallback
-  ["hk", "sg", "jp", "us", "tw"].forEach((k, i) => {
-    const regex = regionRegex[k];
-    if (!hasNodes(regex)) {
-      groups.push({ name: `[0${4 + i}] ${k.toUpperCase()}`, type: "select", proxies: ["DIRECT", "[01] Proxy"] });
-    } else {
-      groups.push({ name: `[0${4 + i}] ${k.toUpperCase()}`, type: "url-test", url: CONFIG.SPEED_TEST_URL, interval: 300, timeout: 3000, tolerance: 100, "include-all": true, filter: regex.source });
-    }
-  });
-  const hasOther = config.proxies.some(p =>!Object.values(regionRegex).some(r => r.test(p.name)));
-  if (!hasOther) {
-    groups.push({ name: "[09] Other", type: "select", proxies: ["DIRECT", "[01] Proxy"] });
-  } else {
-    groups.push({ name: "[09] Other", type: "url-test", url: CONFIG.SPEED_TEST_URL, interval: 300, timeout: 3000, tolerance: 100, "include-all": true, filter: otherFilter });
-  }
+    - name: "[02] AutoTest"
+    type: url-test
+    url: https://www.google.com/generate_204
+    interval: 120
+    timeout: 3000
+    tolerance: 50
+    include-all: true
+    filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'
 
-  // [10]-[14] Service Groups - v1.2.0 new
-  const serviceProxies = ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"];
-  groups.push({ name: "[10] Telegram", type: "select", proxies: serviceProxies });
-  groups.push({ name: "[11] PikPak", type: "select", proxies: serviceProxies });
-  groups.push({ name: "[12] Twitter", type: "select", proxies: serviceProxies });
-  groups.push({ name: "[13] YouTube", type: "select", proxies: serviceProxies });
-  groups.push({ name: "[14] AI", type: "select", proxies: serviceProxies });
+    - name: "[03] Failover"
+    type: fallback
+    url: https://www.google.com/generate_204
+    interval: 120
+    timeout: 3000
+    include-all: true
+    filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'
 
-  // [15]-[18] Basic Groups
-  groups.push({ name: "[15] Direct", type: "select", proxies: ["DIRECT", "[01] Proxy"] });
-  groups.push({ name: "[16] Reject", type: "select", proxies: ["REJECT", "DIRECT"] });
-  groups.push({ name: "[17] CatchAll", type: "select", proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"] });
-  groups.push({ name: "[18] GLOBAL", type: "select", proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"] });
+  # [04]-[09] Regional - v1.1.17 修复版，带 \b 边界
+    - name: "[04] HK"
+    type: url-test
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
+    tolerance: 100
+    include-all: true
+    filter: '(?i)香港|\bHK\b|Hong Kong'
 
-  config["proxy-groups"] = groups;
+    - name: "[05] SG"
+    type: url-test
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
+    tolerance: 100
+    include-all: true
+    filter: '(?i)新加坡|\bSG\b|Singapore'
 
-  // 8. Rules - Priority: Reject > Service > Proxy/GFW > Direct > Final
-  const rules = [
-    "DOMAIN-KEYWORD,stun,REJECT",
-    "DOMAIN-KEYWORD,turn,REJECT",
-    "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT",
-    "AND,((NETWORK,UDP),(DST-PORT,443),(GEOIP,!CN)),REJECT",
-    "RULE-SET,reject,[16] Reject",
-    // v1.2.0 Service Rules
-    "RULE-SET,telegram,[10] Telegram",
-    "RULE-SET,telegramcidr,[10] Telegram,no-resolve",
-    "RULE-SET,pikpak,[11] PikPak",
-    "RULE-SET,twitter,[12] Twitter",
-    "RULE-SET,youtube,[13] YouTube",
-    // AI Extra Domains - Guarantee Meta AI + Mainstream AI covered even if provider outdated
-    "DOMAIN-SUFFIX,meta.ai,[14] AI",
-    "DOMAIN-SUFFIX,www.meta.ai,[14] AI",
-    "DOMAIN-SUFFIX,ai.meta.com,[14] AI",
-    "DOMAIN-SUFFIX,llama.com,[14] AI",
-    "DOMAIN-SUFFIX,llama.meta.com,[14] AI",
-    "DOMAIN-SUFFIX,openai.com,[14] AI",
-    "DOMAIN-SUFFIX,chatgpt.com,[14] AI",
-    "DOMAIN-SUFFIX,oaistatic.com,[14] AI",
-    "DOMAIN-SUFFIX,oaiusercontent.com,[14] AI",
-    "DOMAIN-SUFFIX,claude.ai,[14] AI",
-    "DOMAIN-SUFFIX,anthropic.com,[14] AI",
-    "DOMAIN-SUFFIX,gemini.google.com,[14] AI",
-    "DOMAIN-SUFFIX,bard.google.com,[14] AI",
-    "DOMAIN-SUFFIX,generativelanguage.googleapis.com,[14] AI",
-    "DOMAIN-SUFFIX,ai.google.dev,[14] AI",
-    "DOMAIN-SUFFIX,qwen.ai,[14] AI",
-    "DOMAIN-SUFFIX,chat.qwen.ai,[14] AI",
-    "DOMAIN-SUFFIX,dashscope.aliyuncs.com,[14] AI",
-    "DOMAIN-SUFFIX,x.ai,[14] AI",
-    "DOMAIN-SUFFIX,grok.com,[14] AI",
-    "DOMAIN-SUFFIX,perplexity.ai,[14] AI",
-    "DOMAIN-SUFFIX,poe.com,[14] AI",
-    "DOMAIN-SUFFIX,deepseek.com,[14] AI",
-    "DOMAIN-KEYWORD,deepseek,[14] AI",
-    "RULE-SET,ai,[14] AI",
-    // General
-    "RULE-SET,proxy,[01] Proxy",
-    "RULE-SET,gfw,[01] Proxy",
-    "RULE-SET,direct,[15] Direct",
-    "RULE-SET,lancidr,[15] Direct,no-resolve",
-    "RULE-SET,cncidr,[15] Direct,no-resolve",
-    "GEOIP,CN,[15] Direct,no-resolve",
-    "MATCH,[17] CatchAll"
-  ];
-  config.rules = rules;
+    - name: "[06] JP"
+    type: url-test
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
+    tolerance: 100
+    include-all: true
+    filter: '(?i)日本|\bJP\b|Japan'
 
-  // 9. Profile
-  config.profile = { "store-selected": true, "store-fake-ip": true };
+    - name: "[07] US"
+    type: url-test
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
+    tolerance: 100
+    include-all: true
+    filter: '(?i)美国|\bUS\b|United States|America|\bUSA\b'
 
-  console.log(`[Regional-Extension v1.2.0-beta] Success | Nodes: ${config.proxies.length} | Rules: ${rules.length} | Groups: ${groups.length}`);
-  return config;
-}
+    - name: "[08] TW"
+    type: url-test
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
+    tolerance: 100
+    include-all: true
+    filter: '(?i)台湾|\bTW\b|Taiwan'
+
+    - name: "[09] Other"
+    type: url-test
+    url: https://www.google.com/generate_204
+    interval: 300
+    timeout: 3000
+    tolerance: 100
+    include-all: true
+    filter: '^(?i)(?!.*(香港|\bHK\b|Hong Kong|新加坡|\bSG\b|Singapore|日本|\bJP\b|Japan|美国|\bUS\b|United States|America|\bUSA\b|台湾|\bTW\b|Taiwan|官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'
+
+  # [10]-[14] Service Groups - v1.2.0 new
+    - name: "[10] Telegram"
+    type: select
+    proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]
+
+    - name: "[11] PikPak
