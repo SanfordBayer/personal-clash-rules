@@ -1,6 +1,6 @@
 # ==========================================
-# Clash.Meta Regional Config - FINAL
-# Version: 1.2.0-final-v2 - Fixed Service Groups Node Selection
+# Clash.Meta - FINAL FULL YAML
+# v1.2.1 - 业务组直接显示全部节点 / 修复 AND 报错
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -11,6 +11,7 @@ log-level: info
 ipv6: false
 tcp-concurrent: true
 unified-delay: true
+keep-alive-interval: 30
 profile:
   store-selected: true
   store-fake-ip: true
@@ -57,11 +58,11 @@ proxy-groups:
     - {name: "[07] US", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)美国|\bUS\b|United States|America|\bUSA\b'}
     - {name: "[08] TW", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)台湾|\bTW\b|Taiwan'}
     - {name: "[09] Other", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(香港|\bHK\b|Hong Kong|新加坡|\bSG\b|Singapore|日本|\bJP\b|Japan|美国|\bUS\b|America|\bUSA\b|台湾|\bTW\b|Taiwan|官网|套餐)).*$'}
-    - {name: "[10] Telegram", type: select, include-all: true, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
-    - {name: "[11] PikPak", type: select, include-all: true, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
-    - {name: "[12] Twitter", type: select, include-all: true, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
-    - {name: "[13] YouTube", type: select, include-all: true, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
-    - {name: "[14] AI", type: select, include-all: true, proxies: ["[01] Proxy", "[02] AutoTest", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
+    - {name: "[10] Telegram", type: select, include-all: true, proxies: ["DIRECT"]}
+    - {name: "[11] PikPak", type: select, include-all: true, proxies: ["DIRECT"]}
+    - {name: "[12] Twitter", type: select, include-all: true, proxies: ["DIRECT"]}
+    - {name: "[13] YouTube", type: select, include-all: true, proxies: ["DIRECT"]}
+    - {name: "[14] AI", type: select, include-all: true, proxies: ["DIRECT"]}
     - {name: "[15] Direct", type: select, proxies: ["DIRECT", "[01] Proxy"]}
     - {name: "[16] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
     - {name: "[17] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
@@ -77,35 +78,4 @@ rule-providers:
   telegram: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml}
   telegramcidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt}
   twitter: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml}
-  youtube: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml}
-  pikpak: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml}
-  ai: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/AI.yaml}
-
-rules:
-    - DOMAIN-KEYWORD,stun,REJECT
-    - DOMAIN-KEYWORD,turn,REJECT
-    - DST-PORT,19302,REJECT
-    - RULE-SET,reject,[16] Reject
-    - RULE-SET,telegram,[10] Telegram
-    - RULE-SET,telegramcidr,[10] Telegram,no-resolve
-    - RULE-SET,pikpak,[11] PikPak
-    - RULE-SET,twitter,[12] Twitter
-    - RULE-SET,youtube,[13] YouTube
-    - DOMAIN-SUFFIX,meta.ai,[14] AI
-    - DOMAIN-SUFFIX,www.meta.ai,[14] AI
-    - DOMAIN-SUFFIX,ai.meta.com,[14] AI
-    - DOMAIN-SUFFIX,llama.com,[14] AI
-    - DOMAIN-SUFFIX,openai.com,[14] AI
-    - DOMAIN-SUFFIX,chatgpt.com,[14] AI
-    - DOMAIN-SUFFIX,claude.ai,[14] AI
-    - DOMAIN-SUFFIX,gemini.google.com,[14] AI
-    - DOMAIN-SUFFIX,qwen.ai,[14] AI
-    - DOMAIN-SUFFIX,x.ai,[14] AI
-    - RULE-SET,ai,[14] AI
-    - RULE-SET,proxy,[01] Proxy
-    - RULE-SET,gfw,[01] Proxy
-    - RULE-SET,direct,[15] Direct
-    - RULE-SET,lancidr,[15] Direct,no-resolve
-    - RULE-SET,cncidr,[15] Direct,no-resolve
-    - GEOIP,CN,[15] Direct,no-resolve
-    - MATCH,[17] CatchAll
+  youtube: {type: http, format: yaml, interval: 86400, behavior:
