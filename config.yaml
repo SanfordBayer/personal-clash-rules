@@ -1,6 +1,6 @@
 # ==========================================
-# FINAL COMPLETE - v1.2.2 - 20250515
-# 修复：YouTube 分流 / 业务组自动测速 / 无 AND 报错
+# FINAL v1.3.0 - 20250515 - 全隐患修复版
+# 修复：1.DNS泄露 2.业务组假节点 3.空组 4.YouTube分流
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -11,7 +11,6 @@ log-level: info
 ipv6: false
 tcp-concurrent: true
 unified-delay: true
-keep-alive-interval: 30
 profile:
   store-selected: true
   store-fake-ip: true
@@ -20,7 +19,7 @@ tun:
   enable: true
   stack: gvisor
   strict-route: true
-  dns-hijack: []
+  dns-hijack: ["any:53","tcp://any:53"]
   auto-route: true
   auto-detect-interface: true
   mtu: 1500
@@ -40,10 +39,10 @@ dns:
   respect-rules: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  fake-ip-filter: ['+.lan','+.local','+.apple.com','+.icloud.com','+.mzstatic.com','+.msftconnecttest.com','+.msftncsi.com','localhost.ptlogin2.qq.com','+.in-addr.arpa','+.ip6.arpa','time.*.com','pool.ntp.org']
-  default-nameserver: [223.5.5.5, 1.2.4.8]
-  nameserver: [https://1.1.1.1/dns-query, https://8.8.4.4/dns-query]
-  proxy-server-nameserver: [https://223.5.5.5/dns-query, https://doh.pub/dns-query]
+  fake-ip-filter: ['+.lan','+.local','time.*.com','pool.ntp.org','+.msftconnecttest.com','+.msftncsi.com']
+  default-nameserver: [223.5.5.5, 119.29.29.29]
+  nameserver: [https://1.1.1.1/dns-query, https://8.8.8.8/dns-query]
+  proxy-server-nameserver: [https://1.1.1.1/dns-query, https://8.8.8.8/dns-query]
   direct-nameserver: [https://223.5.5.5/dns-query, https://doh.pub/dns-query]
 
 proxies:
@@ -52,17 +51,17 @@ proxy-groups:
     - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[04] HK", "[05] SG", "[06] JP", "[07] US", "[08] TW", "[09] Other", "DIRECT"]}
     - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
     - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-    - {name: "[04] HK", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)香港|\bHK\b|Hong Kong'}
-    - {name: "[05] SG", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)新加坡|\bSG\b|Singapore'}
-    - {name: "[06] JP", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)日本|\bJP\b|Japan'}
-    - {name: "[07] US", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)美国|\bUS\b|United States|America|\bUSA\b'}
-    - {name: "[08] TW", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)台湾|\bTW\b|Taiwan'}
-    - {name: "[09] Other", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(香港|\bHK\b|Hong Kong|新加坡|\bSG\b|Singapore|日本|\bJP\b|Japan|美国|\bUS\b|America|\bUSA\b|台湾|\bTW\b|Taiwan|官网|套餐)).*$'}
-    - {name: "[10] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
-    - {name: "[11] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
-    - {name: "[12] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
-    - {name: "[13] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
-    - {name: "[14] AI", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
+    - {name: "[04] HK", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '(?i)香港|\bHK\b|Hong Kong'}
+    - {name: "[05] SG", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '(?i)新加坡|\bSG\b|Singapore'}
+    - {name: "[06] JP", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '(?i)日本|\bJP\b|Japan'}
+    - {name: "[07] US", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '(?i)美国|\bUS\b|United States|America|\bUSA\b'}
+    - {name: "[08] TW", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '(?i)台湾|\bTW\b|Taiwan'}
+    - {name: "[09] Other", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '^(?i)(?!.*(香港|\bHK\b|Hong Kong|新加坡|\bSG\b|Singapore|日本|\bJP\b|Japan|美国|\bUS\b|America|\bUSA\b|台湾|\bTW\b|Taiwan|官网|套餐|流量|剩余)).*$'}
+    - {name: "[10] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[11] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[12] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[13] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: ["DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[14] AI", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: ["DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
     - {name: "[15] Direct", type: select, proxies: ["DIRECT", "[01] Proxy"]}
     - {name: "[16] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
     - {name: "[17] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
