@@ -1,6 +1,5 @@
 # ==========================================
-# FINAL COMPLETE - v1.2.4 - 20260923
-# 调整：业务组在前，地区组[10]-[15]挪到[09]AI后面 / 删除Google-Auto / Google默认[01]
+# FINAL COMPLETE - v1.2.5 - 修复 X.com 走 [01] Proxy 慢节点
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -49,17 +48,15 @@ dns:
 proxies:
 
 proxy-groups:
-    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] HK", "[11] SG", "[12] JP", "[13] US", "[14] TW", "[15] Other", "DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] HK", "[11] SG", "[12] JP", "[13] US", "[14] TW", "[15] Other", "DIRECT"]}
     - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
     - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-  # 业务组，全部在前
     - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[10] HK", "[11] SG", "DIRECT"], include-all: true}
     - {name: "[05] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
     - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
-    - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
+    - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
     - {name: "[08] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
     - {name: "[09] AI", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
-  # 地区组，全部挪到AI后面开始排
     - {name: "[10] HK", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)香港|\bHK\b|Hong Kong'}
     - {name: "[11] SG", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)新加坡|\bSG\b|Singapore'}
     - {name: "[12] JP", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)日本|\bJP\b|Japan'}
@@ -89,11 +86,18 @@ rules:
     - DOMAIN-KEYWORD,stun,REJECT
     - DOMAIN-KEYWORD,turn,REJECT
     - DST-PORT,19302,REJECT
+  # YouTube 置顶
     - DOMAIN-SUFFIX,youtube.com,[08] YouTube
     - DOMAIN-SUFFIX,youtu.be,[08] YouTube
-    - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
-    - DOMAIN-SUFFIX,youtube-nocookie.com,[08] YouTube
     - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
+    - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
+  # X / Twitter 修复，x.com 写死在规则集前面
+    - DOMAIN-SUFFIX,x.com,[07] Twitter
+    - DOMAIN-SUFFIX,twitter.com,[07] Twitter
+    - DOMAIN-SUFFIX,t.co,[07] Twitter
+    - DOMAIN-SUFFIX,twimg.com,[07] Twitter
+    - DOMAIN-SUFFIX,twttr.com,[07] Twitter
+    - DOMAIN-SUFFIX,x.ai,[09] AI
     - RULE-SET,reject,[17] Reject
     - RULE-SET,telegram,[05] Telegram
     - RULE-SET,telegramcidr,[05] Telegram,no-resolve
@@ -103,13 +107,9 @@ rules:
     - DOMAIN-SUFFIX,google.com,[04] Google
     - DOMAIN-SUFFIX,gstatic.com,[04] Google
     - DOMAIN-SUFFIX,googleapis.com,[04] Google
-    - DOMAIN-SUFFIX,googleusercontent.com,[04] Google
-    - DOMAIN-SUFFIX,meta.ai,[09] AI
-    - DOMAIN-SUFFIX,openai.com,[09] AI
-    - DOMAIN-SUFFIX,chatgpt.com,[09] AI
-    - DOMAIN-SUFFIX,claude.ai,[09] AI
-    - DOMAIN-SUFFIX,gemini.google.com,[09] AI
     - RULE-SET,ai,[09] AI
+    - DOMAIN-SUFFIX,openai.com,[09] AI
+    - DOMAIN-SUFFIX,claude.ai,[09] AI
     - RULE-SET,proxy,[01] Proxy
     - RULE-SET,gfw,[01] Proxy
     - RULE-SET,direct,[16] Direct
