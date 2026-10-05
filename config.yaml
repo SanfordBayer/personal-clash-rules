@@ -1,5 +1,5 @@
 # ==========================================
-# FINAL COMPLETE - v1.2.5 - 修复 X.com 走 [01] Proxy 慢节点
+# FINAL COMPLETE - v1.2.6 - 加固所有业务组新旧域名
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -86,30 +86,56 @@ rules:
     - DOMAIN-KEYWORD,stun,REJECT
     - DOMAIN-KEYWORD,turn,REJECT
     - DST-PORT,19302,REJECT
-  # YouTube 置顶
+  # === YouTube 加固 ===
     - DOMAIN-SUFFIX,youtube.com,[08] YouTube
     - DOMAIN-SUFFIX,youtu.be,[08] YouTube
     - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
     - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
-  # X / Twitter 修复，x.com 写死在规则集前面
+    - DOMAIN-SUFFIX,youtube-nocookie.com,[08] YouTube
+    - DOMAIN-SUFFIX,ggpht.com,[08] YouTube
+  # === Twitter / X 加固 新旧域名 ===
     - DOMAIN-SUFFIX,x.com,[07] Twitter
     - DOMAIN-SUFFIX,twitter.com,[07] Twitter
     - DOMAIN-SUFFIX,t.co,[07] Twitter
     - DOMAIN-SUFFIX,twimg.com,[07] Twitter
     - DOMAIN-SUFFIX,twttr.com,[07] Twitter
+    - DOMAIN-SUFFIX,pscp.tv,[07] Twitter
+  # === Telegram 加固 ===
+    - DOMAIN-SUFFIX,t.me,[05] Telegram
+    - DOMAIN-SUFFIX,telegram.org,[05] Telegram
+    - DOMAIN-SUFFIX,telegram.me,[05] Telegram
+  # === Google 加固 ===
+    - DOMAIN-SUFFIX,google.com,[04] Google
+    - DOMAIN-SUFFIX,googleapis.com,[04] Google
+    - DOMAIN-SUFFIX,gstatic.com,[04] Google
+    - DOMAIN-SUFFIX,googleusercontent.com,[04] Google
+  # === AI 加固 2025-2026新域名 ===
+    - DOMAIN-SUFFIX,openai.com,[09] AI
+    - DOMAIN-SUFFIX,chatgpt.com,[09] AI
+    - DOMAIN-SUFFIX,oaiusercontent.com,[09] AI
+    - DOMAIN-SUFFIX,auth.openai.com,[09] AI
+    - DOMAIN-SUFFIX,claude.ai,[09] AI
+    - DOMAIN-SUFFIX,anthropic.com,[09] AI
+    - DOMAIN-SUFFIX,perplexity.ai,[09] AI
+    - DOMAIN-SUFFIX,gemini.google.com,[09] AI
+    - DOMAIN-SUFFIX,aistudio.google.com,[09] AI
+    - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
     - DOMAIN-SUFFIX,x.ai,[09] AI
+    - DOMAIN-SUFFIX,api.x.ai,[09] AI
+    - DOMAIN-SUFFIX,grok.com,[09] AI
+    - DOMAIN-SUFFIX,deepseek.com,[09] AI
+    - DOMAIN-SUFFIX,api.deepseek.com,[09] AI
+    - DOMAIN-SUFFIX,qwen.ai,[09] AI
+    - DOMAIN-SUFFIX,poe.com,[09] AI
+    - DOMAIN-SUFFIX,meta.ai,[09] AI
+    - DOMAIN-SUFFIX,llama.com,[09] AI
     - RULE-SET,reject,[17] Reject
     - RULE-SET,telegram,[05] Telegram
     - RULE-SET,telegramcidr,[05] Telegram,no-resolve
     - RULE-SET,pikpak,[06] PikPak
     - RULE-SET,twitter,[07] Twitter
     - RULE-SET,youtube,[08] YouTube
-    - DOMAIN-SUFFIX,google.com,[04] Google
-    - DOMAIN-SUFFIX,gstatic.com,[04] Google
-    - DOMAIN-SUFFIX,googleapis.com,[04] Google
     - RULE-SET,ai,[09] AI
-    - DOMAIN-SUFFIX,openai.com,[09] AI
-    - DOMAIN-SUFFIX,claude.ai,[09] AI
     - RULE-SET,proxy,[01] Proxy
     - RULE-SET,gfw,[01] Proxy
     - RULE-SET,direct,[16] Direct
