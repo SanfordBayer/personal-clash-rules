@@ -1,5 +1,5 @@
 # ==========================================
-# FINAL COMPLETE - v1.2.6 - 加固所有业务组新旧域名
+# FINAL COMPLETE - v1.2.7 - 修复 Gemini 被 Google 截胡 + HK节点不可用
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -56,7 +56,8 @@ proxy-groups:
     - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
     - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
     - {name: "[08] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
-    - {name: "[09] AI", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
+  # AI组修复：测速地址改成gemini，过滤掉HK
+    - {name: "[09] AI", type: url-test, url: https://gemini.google.com, interval: 120, tolerance: 50, include-all: true, filter: '(?i)美国|\bUS\b|日本|\bJP\b|新加坡|\bSG\b|台湾|\bTW\b|America|Japan|Singapore|Taiwan'}
     - {name: "[10] HK", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)香港|\bHK\b|Hong Kong'}
     - {name: "[11] SG", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)新加坡|\bSG\b|Singapore'}
     - {name: "[12] JP", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)日本|\bJP\b|Japan'}
@@ -86,45 +87,41 @@ rules:
     - DOMAIN-KEYWORD,stun,REJECT
     - DOMAIN-KEYWORD,turn,REJECT
     - DST-PORT,19302,REJECT
-  # === YouTube 加固 ===
+  # YouTube 置顶
     - DOMAIN-SUFFIX,youtube.com,[08] YouTube
     - DOMAIN-SUFFIX,youtu.be,[08] YouTube
     - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
     - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
     - DOMAIN-SUFFIX,youtube-nocookie.com,[08] YouTube
     - DOMAIN-SUFFIX,ggpht.com,[08] YouTube
-  # === Twitter / X 加固 新旧域名 ===
+  # X / Twitter
     - DOMAIN-SUFFIX,x.com,[07] Twitter
     - DOMAIN-SUFFIX,twitter.com,[07] Twitter
     - DOMAIN-SUFFIX,t.co,[07] Twitter
     - DOMAIN-SUFFIX,twimg.com,[07] Twitter
-    - DOMAIN-SUFFIX,twttr.com,[07] Twitter
-    - DOMAIN-SUFFIX,pscp.tv,[07] Twitter
-  # === Telegram 加固 ===
+  # Telegram
     - DOMAIN-SUFFIX,t.me,[05] Telegram
     - DOMAIN-SUFFIX,telegram.org,[05] Telegram
-    - DOMAIN-SUFFIX,telegram.me,[05] Telegram
-  # === Google 加固 ===
-    - DOMAIN-SUFFIX,google.com,[04] Google
-    - DOMAIN-SUFFIX,googleapis.com,[04] Google
-    - DOMAIN-SUFFIX,gstatic.com,[04] Google
-    - DOMAIN-SUFFIX,googleusercontent.com,[04] Google
-  # === AI 加固 2025-2026新域名 ===
-    - DOMAIN-SUFFIX,openai.com,[09] AI
-    - DOMAIN-SUFFIX,chatgpt.com,[09] AI
-    - DOMAIN-SUFFIX,oaiusercontent.com,[09] AI
-    - DOMAIN-SUFFIX,auth.openai.com,[09] AI
-    - DOMAIN-SUFFIX,claude.ai,[09] AI
-    - DOMAIN-SUFFIX,anthropic.com,[09] AI
-    - DOMAIN-SUFFIX,perplexity.ai,[09] AI
+  # === Gemini 必须放在 google.com 之前，否则被截胡 ===
     - DOMAIN-SUFFIX,gemini.google.com,[09] AI
     - DOMAIN-SUFFIX,aistudio.google.com,[09] AI
     - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
+    - DOMAIN-SUFFIX,bard.google.com,[09] AI
+    - DOMAIN-SUFFIX,alk2.google.com,[09] AI
+  # Google 通用
+    - DOMAIN-SUFFIX,google.com,[04] Google
+    - DOMAIN-SUFFIX,gstatic.com,[04] Google
+    - DOMAIN-SUFFIX,googleapis.com,[04] Google
+  # AI 其他
+    - DOMAIN-SUFFIX,openai.com,[09] AI
+    - DOMAIN-SUFFIX,chatgpt.com,[09] AI
+    - DOMAIN-SUFFIX,oaiusercontent.com,[09] AI
+    - DOMAIN-SUFFIX,claude.ai,[09] AI
+    - DOMAIN-SUFFIX,anthropic.com,[09] AI
+    - DOMAIN-SUFFIX,perplexity.ai,[09] AI
     - DOMAIN-SUFFIX,x.ai,[09] AI
-    - DOMAIN-SUFFIX,api.x.ai,[09] AI
     - DOMAIN-SUFFIX,grok.com,[09] AI
     - DOMAIN-SUFFIX,deepseek.com,[09] AI
-    - DOMAIN-SUFFIX,api.deepseek.com,[09] AI
     - DOMAIN-SUFFIX,qwen.ai,[09] AI
     - DOMAIN-SUFFIX,poe.com,[09] AI
     - DOMAIN-SUFFIX,meta.ai,[09] AI
