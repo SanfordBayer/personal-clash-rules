@@ -1,5 +1,5 @@
-# v1.4.7 - 去掉地区分组，恢复经典样式，大写命名
-# [09] AI 包含 z.ai / QWEN / Kimi / 豆包 / DeepSeek / Gemini / Claude / 【entity-Hermes¦canonical_name=Hermes】 / Antigravity
+# v1.4.8 - 修复 [09] AI 空分组
+# [09] AI = US/JP/SG/TW 不含HK，过滤器用小写避免标签
 mixed-port: 7890
 socks-port: 7891
 allow-lan: true
@@ -57,7 +57,7 @@ proxy-groups:
     - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
     - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
     - {name: "[08] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
-    - {name: "[09] A​I", type: url-test, url: https://gemini.google.com, interval: 120, tolerance: 50, include-all: true, filter: '(?i)U​S|J​P|S​G|T​W|美国|日本|新加坡|台湾|America|Japan|Singapore|Taiwan'}
+    - {name: "[09] A​I", type: url-test, url: https://gemini.google.com, interval: 120, tolerance: 50, include-all: true, filter: '(?i)us|jp|sg|tw|美国|日本|新加坡|台湾|America|Japan|Singapore|Taiwan'}
     - {name: "[16] Direct", type: select, proxies: ["DIRECT", "[01] Proxy"]}
     - {name: "[17] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
     - {name: "[18] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
