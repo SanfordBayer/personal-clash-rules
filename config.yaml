@@ -1,8 +1,7 @@
 # ==========================================
-# FINAL - v1.3.1 - Antigravity TUN兜底完整版
-# 排序：01代理/02自动/03备用/04谷歌/05电报/06PikPak/07推特/08油管/09AI -> 10HK/11SG/12JP/13US/14TW/15其他
-# 修复：X.com / Gemini被Google截胡 / AI不过HK / TUN防漏
-# 日常：TUN关/系统代理开  跑Antigravity：TUN开/系统代理关
+# v1.4.0 - Agents全兼容版
+# 支持：Antigravity / Cursor / Windsurf / Claude Code / Codex / 【entity-Copilot¦canonical_name=Copilot】 / Gemini CLI / Aider / Cline / Roo / Continue / OpenHands
+# 日常：TUN关/系统代理开  跑Agent：TUN开/系统代理关
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -72,7 +71,7 @@ proxy-groups:
     - {name: "[17] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
     - {name: "[18] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
     - {name: "[19] GLOBAL", type: select, proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"]}
-    - {name: "[20] Antigravity", type: select, proxies: ["[09] AI", "[01] Proxy", "[02] AutoTest"]}
+    - {name: "[20] Agents", type: select, proxies: ["[09] AI", "[01] Proxy", "[02] AutoTest"]}
 
 rule-providers:
   reject: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt}
@@ -89,46 +88,68 @@ rule-providers:
   ai: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/AI.yaml}
 
 rules:
-  # ===== Antigravity 本地客户端兜底，置顶 =====
-    - PROCESS-NAME,Antigravity,[20] Antigravity
-    - PROCESS-NAME,antigravity,[20] Antigravity
-    - PROCESS-NAME,Antigravity Helper,[20] Antigravity
-    - PROCESS-NAME,antigravity.exe,[20] Antigravity
-    - DOMAIN-KEYWORD,antigravity,[20] Antigravity
-    - DOMAIN-SUFFIX,antigravity.google.com,[20] Antigravity
-  # ===== 业务域名加固，新旧域名都兜住 =====
+  # ===== 本地 AI Agents 全家桶兜底，置顶 =====
+    - PROCESS-NAME,Antigravity,[20] Agents
+    - PROCESS-NAME,antigravity,[20] Agents
+    - PROCESS-NAME,Cursor,[20] Agents
+    - PROCESS-NAME,cursor,[20] Agents
+    - PROCESS-NAME,Cursor Helper,[20] Agents
+    - PROCESS-NAME,Windsurf,[20] Agents
+    - PROCESS-NAME,windsurf,[20] Agents
+    - PROCESS-NAME,Claude,[20] Agents
+    - PROCESS-NAME,claude,[20] Agents
+    - PROCESS-NAME,Codex,[20] Agents
+    - PROCESS-NAME,codex,[20] Agents
+    - PROCESS-NAME,Copilot,[20] Agents
+    - PROCESS-NAME,copilot,[20] Agents
+    - PROCESS-NAME,Gemini,[20] Agents
+    - PROCESS-NAME,gemini,[20] Agents
+    - PROCESS-NAME,Aider,[20] Agents
+    - PROCESS-NAME,Cline,[20] Agents
+    - PROCESS-NAME,cline,[20] Agents
+    - PROCESS-NAME,Roo,[20] Agents
+    - PROCESS-NAME,Continue,[20] Agents
+    - PROCESS-NAME,OpenHands,[20] Agents
+    - PROCESS-NAME,antigravity.exe,[20] Agents
+    - PROCESS-NAME,Cursor.exe,[20] Agents
+    - PROCESS-NAME,Windsurf.exe,[20] Agents
+    - PROCESS-NAME,claude.exe,[20] Agents
+    - PROCESS-NAME,codex.exe,[20] Agents
+    - DOMAIN-KEYWORD,antigravity,[20] Agents
+    - DOMAIN-SUFFIX,cursor.com,[20] Agents
+    - DOMAIN-SUFFIX,cursor.sh,[20] Agents
+    - DOMAIN-SUFFIX,api.cursor.sh,[20] Agents
+    - DOMAIN-SUFFIX,windsurf.com,[20] Agents
+    - DOMAIN-SUFFIX,codeium.com,[20] Agents
+    - DOMAIN-SUFFIX,api.codeium.com,[20] Agents
+    - DOMAIN-SUFFIX,githubcopilot.com,[20] Agents
+    - DOMAIN-SUFFIX,copilot.github.com,[20] Agents
+    - DOMAIN-SUFFIX,api.githubcopilot.com,[20] Agents
+    - DOMAIN-SUFFIX,continue.dev,[20] Agents
+    - DOMAIN-SUFFIX,openhands.dev,[20] Agents
+  # ===== 业务加固 =====
     - DOMAIN-SUFFIX,youtube.com,[08] YouTube
-    - DOMAIN-SUFFIX,youtu.be,[08] YouTube
     - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
     - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
-    - DOMAIN-SUFFIX,youtube-nocookie.com,[08] YouTube
-    - DOMAIN-SUFFIX,ggpht.com,[08] YouTube
     - DOMAIN-SUFFIX,x.com,[07] Twitter
     - DOMAIN-SUFFIX,twitter.com,[07] Twitter
     - DOMAIN-SUFFIX,t.co,[07] Twitter
     - DOMAIN-SUFFIX,twimg.com,[07] Twitter
     - DOMAIN-SUFFIX,t.me,[05] Telegram
     - DOMAIN-SUFFIX,telegram.org,[05] Telegram
-  # Gemini 必须在 google.com 之前，否则被截胡
     - DOMAIN-SUFFIX,gemini.google.com,[09] AI
     - DOMAIN-SUFFIX,aistudio.google.com,[09] AI
     - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
-    - DOMAIN-SUFFIX,bard.google.com,[09] AI
-    - DOMAIN-SUFFIX,alk2.google.com,[09] AI
     - DOMAIN-SUFFIX,google.com,[04] Google
-    - DOMAIN-SUFFIX,gstatic.com,[04] Google
-    - DOMAIN-SUFFIX,googleapis.com,[04] Google
     - DOMAIN-SUFFIX,openai.com,[09] AI
     - DOMAIN-SUFFIX,chatgpt.com,[09] AI
     - DOMAIN-SUFFIX,oaiusercontent.com,[09] AI
     - DOMAIN-SUFFIX,claude.ai,[09] AI
     - DOMAIN-SUFFIX,anthropic.com,[09] AI
     - DOMAIN-SUFFIX,x.ai,[09] AI
-    - DOMAIN-SUFFIX,grok.com,[09] AI
     - DOMAIN-SUFFIX,deepseek.com,[09] AI
     - DOMAIN-SUFFIX,perplexity.ai,[09] AI
     - DOMAIN-SUFFIX,meta.ai,[09] AI
-    - DOMAIN-SUFFIX,llama.com,[09] AI
     - RULE-SET,reject,[17] Reject
     - RULE-SET,telegram,[05] Telegram
     - RULE-SET,telegramcidr,[05] Telegram,no-resolve
