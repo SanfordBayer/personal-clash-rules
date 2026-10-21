@@ -1,6 +1,6 @@
 # ==========================================
-# v1.4.1 - 兼容 Hermes
-# 新增：Hermes进程名 / gvt1.com等YouTube CDN域名
+# v1.4.4 - AI全合一版
+# 所有AI：国外AI + 中文模型 z.ai / QWEN / Kimi / 豆包 / DeepSeek 全进 [09] AI
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -51,7 +51,7 @@ dns:
 proxies:
 
 proxy-groups:
-    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] HK", "[11] SG", "[12] JP", "[13] US", "[14] TW", "[15] Other", "DIRECT"]}
+    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] HK", "[11] 【entity-SG¦canonical_name=SG】", "[12] JP", "[13] US", "[14] TW", "[15] Other", "DIRECT"]}
     - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
     - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
     - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[11] SG", "DIRECT"], include-all: true}
@@ -87,60 +87,48 @@ rule-providers:
   ai: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/AI.yaml}
 
 rules:
-  # ===== 本地 AI Agents 全家桶，进程名置顶 =====
+  # ===== 所有AI放一起，进程+域名置顶 =====
     - PROCESS-NAME,Antigravity,[20] Agents
-    - PROCESS-NAME,antigravity,[20] Agents
     - PROCESS-NAME,Cursor,[20] Agents
-    - PROCESS-NAME,cursor,[20] Agents
     - PROCESS-NAME,Windsurf,[20] Agents
-    - PROCESS-NAME,windsurf,[20] Agents
     - PROCESS-NAME,Claude,[20] Agents
-    - PROCESS-NAME,claude,[20] Agents
     - PROCESS-NAME,Codex,[20] Agents
-    - PROCESS-NAME,codex,[20] Agents
-    - PROCESS-NAME,Copilot,[20] Agents
-    - PROCESS-NAME,copilot,[20] Agents
-    - PROCESS-NAME,Gemini,[20] Agents
-    - PROCESS-NAME,gemini,[20] Agents
-    - PROCESS-NAME,Aider,[20] Agents
-    - PROCESS-NAME,Cline,[20] Agents
-    - PROCESS-NAME,cline,[20] Agents
     - PROCESS-NAME,Hermes,[20] Agents
-    - PROCESS-NAME,hermes,[20] Agents
-    - PROCESS-NAME,Hermes.exe,[20] Agents
     - PROCESS-NAME,hermes.exe,[20] Agents
-    - PROCESS-NAME,Hermes Helper,[20] Agents
-    - PROCESS-NAME,antigravity.exe,[20] Agents
     - PROCESS-NAME,Cursor.exe,[20] Agents
-    - PROCESS-NAME,Windsurf.exe,[20] Agents
-    - DOMAIN-KEYWORD,antigravity,[20] Agents
-    - DOMAIN-KEYWORD,hermes,[20] Agents
-    - DOMAIN-SUFFIX,cursor.com,[20] Agents
-    - DOMAIN-SUFFIX,cursor.sh,[20] Agents
-    - DOMAIN-SUFFIX,windsurf.com,[20] Agents
-    - DOMAIN-SUFFIX,codeium.com,[20] Agents
-    - DOMAIN-SUFFIX,githubcopilot.com,[20] Agents
-  # ===== YouTube CDN 加固，gvt1系 =====
+    - DOMAIN-KEYWORD,antigravity,[09] AI
+    - DOMAIN-KEYWORD,hermes,[09] AI
+  # 中文模型，全部进 [09] AI 出国际版
+    - DOMAIN-SUFFIX,z.ai,[09] AI
+    - DOMAIN-SUFFIX,bigmodel.cn,[09] AI
+    - DOMAIN-SUFFIX,zhipuai.cn,[09] AI
+    - DOMAIN-SUFFIX,chatglm.cn,[09] AI
+    - DOMAIN-SUFFIX,qwen.ai,[09] AI
+    - DOMAIN-SUFFIX,qwenlm.ai,[09] AI
+    - DOMAIN-SUFFIX,tongyi.aliyun.com,[09] AI
+    - DOMAIN-SUFFIX,dashscope.aliyuncs.com,[09] AI
+    - DOMAIN-SUFFIX,dashscope.aliyun.com,[09] AI
+    - DOMAIN-SUFFIX,modelscope.cn,[09] AI
+    - DOMAIN-SUFFIX,modelscope.com,[09] AI
+    - DOMAIN-SUFFIX,moonshot.cn,[09] AI
+    - DOMAIN-SUFFIX,kimi.com,[09] AI
+    - DOMAIN-SUFFIX,minimax.chat,[09] AI
+    - DOMAIN-SUFFIX,doubao.com,[09] AI
+    - DOMAIN-SUFFIX,volcengine.com,[09] AI
+    - DOMAIN-SUFFIX,qianfan.baidu.com,[09] AI
+    - DOMAIN-SUFFIX,baichuan-ai.com,[09] AI
+    - DOMAIN-SUFFIX,lingyiwanwu.com,[09] AI
+    - DOMAIN-SUFFIX,01.ai,[09] AI
+    - DOMAIN-SUFFIX,xfyun.cn,[09] AI
+  # 国外AI
     - DOMAIN-SUFFIX,youtube.com,[08] YouTube
-    - DOMAIN-SUFFIX,youtu.be,[08] YouTube
     - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
-    - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
-    - DOMAIN-SUFFIX,youtube-nocookie.com,[08] YouTube
-    - DOMAIN-SUFFIX,ggpht.com,[08] YouTube
     - DOMAIN-SUFFIX,gvt1.com,[08] YouTube
     - DOMAIN-SUFFIX,gvt2.com,[08] YouTube
-    - DOMAIN-SUFFIX,gvt3.com,[08] YouTube
-    - DOMAIN-SUFFIX,gvt1-cn.com,[08] YouTube
-    - DOMAIN-SUFFIX,gvt1-cn.net,[08] YouTube
     - DOMAIN-KEYWORD,gvt1,[08] YouTube
-    - DOMAIN-KEYWORD,googlevideo,[08] YouTube
-  # ===== 其他业务 =====
     - DOMAIN-SUFFIX,x.com,[07] Twitter
     - DOMAIN-SUFFIX,twitter.com,[07] Twitter
-    - DOMAIN-SUFFIX,t.co,[07] Twitter
-    - DOMAIN-SUFFIX,twimg.com,[07] Twitter
     - DOMAIN-SUFFIX,t.me,[05] Telegram
-    - DOMAIN-SUFFIX,telegram.org,[05] Telegram
     - DOMAIN-SUFFIX,gemini.google.com,[09] AI
     - DOMAIN-SUFFIX,aistudio.google.com,[09] AI
     - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
@@ -151,10 +139,10 @@ rules:
     - DOMAIN-SUFFIX,anthropic.com,[09] AI
     - DOMAIN-SUFFIX,x.ai,[09] AI
     - DOMAIN-SUFFIX,deepseek.com,[09] AI
+    - DOMAIN-SUFFIX,perplexity.ai,[09] AI
+    - DOMAIN-SUFFIX,meta.ai,[09] AI
     - RULE-SET,reject,[17] Reject
     - RULE-SET,telegram,[05] Telegram
-    - RULE-SET,telegramcidr,[05] Telegram,no-resolve
-    - RULE-SET,pikpak,[06] PikPak
     - RULE-SET,twitter,[07] Twitter
     - RULE-SET,youtube,[08] YouTube
     - RULE-SET,ai,[09] AI
