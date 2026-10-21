@@ -1,7 +1,6 @@
 # ==========================================
-# v1.4.0 - Agents全兼容版
-# 支持：Antigravity / Cursor / Windsurf / Claude Code / Codex / 【entity-Copilot¦canonical_name=Copilot】 / Gemini CLI / Aider / Cline / Roo / Continue / OpenHands
-# 日常：TUN关/系统代理开  跑Agent：TUN开/系统代理关
+# v1.4.1 - 兼容 Hermes
+# 新增：Hermes进程名 / gvt1.com等YouTube CDN域名
 # ==========================================
 mixed-port: 7890
 socks-port: 7891
@@ -88,12 +87,11 @@ rule-providers:
   ai: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/AI.yaml}
 
 rules:
-  # ===== 本地 AI Agents 全家桶兜底，置顶 =====
+  # ===== 本地 AI Agents 全家桶，进程名置顶 =====
     - PROCESS-NAME,Antigravity,[20] Agents
     - PROCESS-NAME,antigravity,[20] Agents
     - PROCESS-NAME,Cursor,[20] Agents
     - PROCESS-NAME,cursor,[20] Agents
-    - PROCESS-NAME,Cursor Helper,[20] Agents
     - PROCESS-NAME,Windsurf,[20] Agents
     - PROCESS-NAME,windsurf,[20] Agents
     - PROCESS-NAME,Claude,[20] Agents
@@ -107,30 +105,36 @@ rules:
     - PROCESS-NAME,Aider,[20] Agents
     - PROCESS-NAME,Cline,[20] Agents
     - PROCESS-NAME,cline,[20] Agents
-    - PROCESS-NAME,Roo,[20] Agents
-    - PROCESS-NAME,Continue,[20] Agents
-    - PROCESS-NAME,OpenHands,[20] Agents
+    - PROCESS-NAME,Hermes,[20] Agents
+    - PROCESS-NAME,hermes,[20] Agents
+    - PROCESS-NAME,Hermes.exe,[20] Agents
+    - PROCESS-NAME,hermes.exe,[20] Agents
+    - PROCESS-NAME,Hermes Helper,[20] Agents
     - PROCESS-NAME,antigravity.exe,[20] Agents
     - PROCESS-NAME,Cursor.exe,[20] Agents
     - PROCESS-NAME,Windsurf.exe,[20] Agents
-    - PROCESS-NAME,claude.exe,[20] Agents
-    - PROCESS-NAME,codex.exe,[20] Agents
     - DOMAIN-KEYWORD,antigravity,[20] Agents
+    - DOMAIN-KEYWORD,hermes,[20] Agents
     - DOMAIN-SUFFIX,cursor.com,[20] Agents
     - DOMAIN-SUFFIX,cursor.sh,[20] Agents
-    - DOMAIN-SUFFIX,api.cursor.sh,[20] Agents
     - DOMAIN-SUFFIX,windsurf.com,[20] Agents
     - DOMAIN-SUFFIX,codeium.com,[20] Agents
-    - DOMAIN-SUFFIX,api.codeium.com,[20] Agents
     - DOMAIN-SUFFIX,githubcopilot.com,[20] Agents
-    - DOMAIN-SUFFIX,copilot.github.com,[20] Agents
-    - DOMAIN-SUFFIX,api.githubcopilot.com,[20] Agents
-    - DOMAIN-SUFFIX,continue.dev,[20] Agents
-    - DOMAIN-SUFFIX,openhands.dev,[20] Agents
-  # ===== 业务加固 =====
+  # ===== YouTube CDN 加固，gvt1系 =====
     - DOMAIN-SUFFIX,youtube.com,[08] YouTube
+    - DOMAIN-SUFFIX,youtu.be,[08] YouTube
     - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
     - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
+    - DOMAIN-SUFFIX,youtube-nocookie.com,[08] YouTube
+    - DOMAIN-SUFFIX,ggpht.com,[08] YouTube
+    - DOMAIN-SUFFIX,gvt1.com,[08] YouTube
+    - DOMAIN-SUFFIX,gvt2.com,[08] YouTube
+    - DOMAIN-SUFFIX,gvt3.com,[08] YouTube
+    - DOMAIN-SUFFIX,gvt1-cn.com,[08] YouTube
+    - DOMAIN-SUFFIX,gvt1-cn.net,[08] YouTube
+    - DOMAIN-KEYWORD,gvt1,[08] YouTube
+    - DOMAIN-KEYWORD,googlevideo,[08] YouTube
+  # ===== 其他业务 =====
     - DOMAIN-SUFFIX,x.com,[07] Twitter
     - DOMAIN-SUFFIX,twitter.com,[07] Twitter
     - DOMAIN-SUFFIX,t.co,[07] Twitter
@@ -143,13 +147,10 @@ rules:
     - DOMAIN-SUFFIX,google.com,[04] Google
     - DOMAIN-SUFFIX,openai.com,[09] AI
     - DOMAIN-SUFFIX,chatgpt.com,[09] AI
-    - DOMAIN-SUFFIX,oaiusercontent.com,[09] AI
     - DOMAIN-SUFFIX,claude.ai,[09] AI
     - DOMAIN-SUFFIX,anthropic.com,[09] AI
     - DOMAIN-SUFFIX,x.ai,[09] AI
     - DOMAIN-SUFFIX,deepseek.com,[09] AI
-    - DOMAIN-SUFFIX,perplexity.ai,[09] AI
-    - DOMAIN-SUFFIX,meta.ai,[09] AI
     - RULE-SET,reject,[17] Reject
     - RULE-SET,telegram,[05] Telegram
     - RULE-SET,telegramcidr,[05] Telegram,no-resolve
