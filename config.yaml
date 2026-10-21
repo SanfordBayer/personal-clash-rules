@@ -1,5 +1,5 @@
-# v1.4.5 - AI全合一干净版
-# z.ai / QWEN / Kimi / 豆包 / DeepSeek / Gemini / Claude / 【entity-Hermes¦canonical_name=Hermes】 / Antigravity 全进 [09] AI
+# v1.4.7 - 去掉地区分组，恢复经典样式，大写命名
+# [09] AI 包含 z.ai / QWEN / Kimi / 豆包 / DeepSeek / Gemini / Claude / 【entity-Hermes¦canonical_name=Hermes】 / Antigravity
 mixed-port: 7890
 socks-port: 7891
 allow-lan: true
@@ -49,26 +49,20 @@ dns:
 proxies:
 
 proxy-groups:
-    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] hk-node", "[11] sg-node", "[12] jp-node", "[13] us-node", "[14] tw-node", "[15] other-node", "DIRECT"]}
+    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "DIRECT"]}
     - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
     - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-    - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[11] sg-node", "DIRECT"], include-all: true}
+    - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"], include-all: true}
     - {name: "[05] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
     - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
     - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
     - {name: "[08] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
-    - {name: "[09] AI", type: url-test, url: https://gemini.google.com, interval: 120, tolerance: 50, include-all: true, filter: '(?i)美国|日本|新加坡|台湾|America|Japan|Singapore|Taiwan'}
-    - {name: "[10] hk-node", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)香港|Hong Kong'}
-    - {name: "[11] sg-node", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)新加坡|Singapore'}
-    - {name: "[12] jp-node", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)日本|Japan'}
-    - {name: "[13] us-node", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)美国|United States|America'}
-    - {name: "[14] tw-node", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)台湾|Taiwan'}
-    - {name: "[15] other-node", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(香港|新加坡|日本|美国|台湾|官网|套餐)).*$'}
+    - {name: "[09] A​I", type: url-test, url: https://gemini.google.com, interval: 120, tolerance: 50, include-all: true, filter: '(?i)U​S|J​P|S​G|T​W|美国|日本|新加坡|台湾|America|Japan|Singapore|Taiwan'}
     - {name: "[16] Direct", type: select, proxies: ["DIRECT", "[01] Proxy"]}
     - {name: "[17] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
     - {name: "[18] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
     - {name: "[19] GLOBAL", type: select, proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"]}
-    - {name: "[20] Agents", type: select, proxies: ["[09] AI", "[01] Proxy", "[02] AutoTest"]}
+    - {name: "[20] Agents", type: select, proxies: ["[09] A​I", "[01] Proxy", "[02] AutoTest"]}
 
 rule-providers:
   reject: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt}
@@ -90,47 +84,47 @@ rules:
     - PROCESS-NAME,Windsurf,[20] Agents
     - PROCESS-NAME,Claude,[20] Agents
     - PROCESS-NAME,Codex,[20] Agents
-    - PROCESS-NAME,【entity-Hermes¦canonical_name=Hermes】,[20] Agents
-    - PROCESS-NAME,【entity-hermes¦canonical_name=Hermes】.exe,[20] Agents
-    - DOMAIN-KEYWORD,antigravity,[09] AI
-    - DOMAIN-KEYWORD,【entity-hermes¦canonical_name=Hermes】,[09] AI
-    - DOMAIN-SUFFIX,z.ai,[09] AI
-    - DOMAIN-SUFFIX,bigmodel.cn,[09] AI
-    - DOMAIN-SUFFIX,zhipuai.cn,[09] AI
-    - DOMAIN-SUFFIX,qwen.ai,[09] AI
-    - DOMAIN-SUFFIX,qwenlm.ai,[09] AI
-    - DOMAIN-SUFFIX,tongyi.aliyun.com,[09] AI
-    - DOMAIN-SUFFIX,dashscope.aliyuncs.com,[09] AI
-    - DOMAIN-SUFFIX,dashscope.aliyun.com,[09] AI
-    - DOMAIN-SUFFIX,modelscope.cn,[09] AI
-    - DOMAIN-SUFFIX,moonshot.cn,[09] AI
-    - DOMAIN-SUFFIX,kimi.com,[09] AI
-    - DOMAIN-SUFFIX,minimax.chat,[09] AI
-    - DOMAIN-SUFFIX,doubao.com,[09] AI
-    - DOMAIN-SUFFIX,volcengine.com,[09] AI
-    - DOMAIN-SUFFIX,qianfan.baidu.com,[09] AI
-    - DOMAIN-SUFFIX,baichuan-ai.com,[09] AI
-    - DOMAIN-SUFFIX,01.ai,[09] AI
-    - DOMAIN-SUFFIX,xfyun.cn,[09] AI
+    - PROCESS-NAME, 【entity-Hermes¦canonical_name=Hermes】,[20] Agents
+    - PROCESS-NAME, 【entity-hermes¦canonical_name=Hermes】.exe,[20] Agents
+    - DOMAIN-KEYWORD,antigravity,[09] A​I
+    - DOMAIN-KEYWORD, 【entity-hermes¦canonical_name=Hermes】,[09] A​I
+    - DOMAIN-SUFFIX,z.ai,[09] A​I
+    - DOMAIN-SUFFIX,bigmodel.cn,[09] A​I
+    - DOMAIN-SUFFIX,zhipuai.cn,[09] A​I
+    - DOMAIN-SUFFIX,qwen.ai,[09] A​I
+    - DOMAIN-SUFFIX,qwenlm.ai,[09] A​I
+    - DOMAIN-SUFFIX,tongyi.aliyun.com,[09] A​I
+    - DOMAIN-SUFFIX,dashscope.aliyuncs.com,[09] A​I
+    - DOMAIN-SUFFIX,dashscope.aliyun.com,[09] A​I
+    - DOMAIN-SUFFIX,modelscope.cn,[09] A​I
+    - DOMAIN-SUFFIX,moonshot.cn,[09] A​I
+    - DOMAIN-SUFFIX,kimi.com,[09] A​I
+    - DOMAIN-SUFFIX,minimax.chat,[09] A​I
+    - DOMAIN-SUFFIX,doubao.com,[09] A​I
+    - DOMAIN-SUFFIX,volcengine.com,[09] A​I
+    - DOMAIN-SUFFIX,qianfan.baidu.com,[09] A​I
+    - DOMAIN-SUFFIX,baichuan-ai.com,[09] A​I
+    - DOMAIN-SUFFIX,01.ai,[09] A​I
+    - DOMAIN-SUFFIX,xfyun.cn,[09] A​I
     - DOMAIN-SUFFIX,youtube.com,[08] YouTube
     - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
     - DOMAIN-SUFFIX,gvt1.com,[08] YouTube
     - DOMAIN-SUFFIX,gvt2.com,[08] YouTube
     - DOMAIN-SUFFIX,x.com,[07] Twitter
     - DOMAIN-SUFFIX,t.me,[05] Telegram
-    - DOMAIN-SUFFIX,gemini.google.com,[09] AI
-    - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
+    - DOMAIN-SUFFIX,gemini.google.com,[09] A​I
+    - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] A​I
     - DOMAIN-SUFFIX,google.com,[04] Google
-    - DOMAIN-SUFFIX,openai.com,[09] AI
-    - DOMAIN-SUFFIX,claude.ai,[09] AI
-    - DOMAIN-SUFFIX,anthropic.com,[09] AI
-    - DOMAIN-SUFFIX,x.ai,[09] AI
-    - DOMAIN-SUFFIX,deepseek.com,[09] AI
+    - DOMAIN-SUFFIX,openai.com,[09] A​I
+    - DOMAIN-SUFFIX,claude.ai,[09] A​I
+    - DOMAIN-SUFFIX,anthropic.com,[09] A​I
+    - DOMAIN-SUFFIX,x.ai,[09] A​I
+    - DOMAIN-SUFFIX,deepseek.com,[09] A​I
     - RULE-SET,reject,[17] Reject
     - RULE-SET,telegram,[05] Telegram
     - RULE-SET,twitter,[07] Twitter
     - RULE-SET,youtube,[08] YouTube
-    - RULE-SET,ai,[09] AI
+    - RULE-SET,ai,[09] A​I
     - RULE-SET,proxy,[01] Proxy
     - RULE-SET,gfw,[01] Proxy
     - RULE-SET,direct,[16] Direct
