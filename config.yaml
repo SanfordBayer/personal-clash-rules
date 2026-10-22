@@ -1,5 +1,4 @@
-# v1.5.0 - 中文分组名最终版，彻底解决标签污染，恢复地区分组
-# [09] AI = US/JP/SG/TW 不含HK，z.ai/QWEN/Kimi/豆包/全进AI
+# v1.5.1 - 修复 ai 404 + 中文分组名 + [09] AI 有节点
 mixed-port: 7890
 socks-port: 7891
 allow-lan: true
@@ -82,7 +81,7 @@ rule-providers:
   twitter: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml}
   youtube: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml}
   pikpak: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml}
-  ai: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/AI.yaml}
+  ai: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml}
 
 rules:
     - PROCESS-NAME,Antigravity,[20] Agents
@@ -90,10 +89,10 @@ rules:
     - PROCESS-NAME,Windsurf,[20] Agents
     - PROCESS-NAME,Claude,[20] Agents
     - PROCESS-NAME,Codex,[20] Agents
-    - PROCESS-NAME, 【entity-Hermes¦canonical_name=Hermes】,[20] Agents
-    - PROCESS-NAME, 【entity-hermes¦canonical_name=Hermes】.exe,[20] Agents
+    - PROCESS-NAME, Hermes,[20] Agents
+    - PROCESS-NAME, hermes.exe,[20] Agents
     - DOMAIN-KEYWORD,antigravity,[09] AI
-    - DOMAIN-KEYWORD, 【entity-hermes¦canonical_name=Hermes】,[09] AI
+    - DOMAIN-KEYWORD, hermes,[09] AI
     - DOMAIN-SUFFIX,z.ai,[09] AI
     - DOMAIN-SUFFIX,bigmodel.cn,[09] AI
     - DOMAIN-SUFFIX,zhipuai.cn,[09] AI
