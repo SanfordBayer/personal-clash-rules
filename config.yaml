@@ -1,4 +1,4 @@
-# v1.5.1 - 修复 ai 404 + 中文分组名 + [09] AI 有节点
+# v1.5.3 - 完整修复版（修复 AI 404 + 规则类型匹配 + 中英节点筛选 + 全量 AI 走代理）
 mixed-port: 7890
 socks-port: 7891
 allow-lan: true
@@ -10,6 +10,7 @@ tcp-concurrent: true
 unified-delay: true
 keep-alive-interval: 30
 find-process-mode: strict
+
 profile:
   store-selected: true
   store-fake-ip: true
@@ -39,35 +40,48 @@ dns:
   respect-rules: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  fake-ip-filter: ['+.lan','+.local','+.msftconnecttest.com','+.msftncsi.com','time.*.com','pool.ntp.org']
+  fake-ip-filter: ['+.lan', '+.local', '+.msftconnecttest.com', '+.msftncsi.com', 'time.*.com', 'pool.ntp.org']
   default-nameserver: [223.5.5.5, 1.2.4.8]
   nameserver: [https://1.1.1.1/dns-query, https://8.8.4.4/dns-query]
   proxy-server-nameserver: [https://223.5.5.5/dns-query]
   direct-nameserver: [https://223.5.5.5/dns-query]
 
+# 提示：如果你是将此文件作为独立配置直接拉取（而非在客户端内用 Merge/Override 覆写），
+# 请取消下方 proxy-providers 的注释，并填入你的机场订阅链接：
+# proxy-providers:
+#   my_airport:
+#     type: http
+#     url: "https://你的机场订阅链接填在这里"
+#     interval: 86400
+#     path: ./proxies/my_airport.yaml
+#     health-check:
+#       enable: true
+#       interval: 300
+#       url: https://www.google.com/generate_204
+
 proxies:
 
 proxy-groups:
-    - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] 香港", "[11] 新加坡", "[12] 日本", "[13] 美国", "[14] 台湾", "[15] 其他", "DIRECT"]}
-    - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-    - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-    - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[11] 新加坡", "DIRECT"], include-all: true}
-    - {name: "[05] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
-    - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, proxies: []}
-    - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
-    - {name: "[08] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, proxies: []}
-    - {name: "[09] AI", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '(?i)us|jp|sg|tw'}
-    - {name: "[10] 香港", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)hk|香港|Hong Kong'}
-    - {name: "[11] 新加坡", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)sg|新加坡|Singapore'}
-    - {name: "[12] 日本", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)jp|日本|Japan'}
-    - {name: "[13] 美国", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)us|美国|United States|America'}
-    - {name: "[14] 台湾", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)tw|台湾|Taiwan'}
-    - {name: "[15] 其他", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(hk|sg|jp|us|tw|香港|新加坡|日本|美国|台湾|官网|套餐)).*$'}
-    - {name: "[16] Direct", type: select, proxies: ["DIRECT", "[01] Proxy"]}
-    - {name: "[17] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
-    - {name: "[18] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
-    - {name: "[19] GLOBAL", type: select, proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"]}
-    - {name: "[20] Agents", type: select, proxies: ["[09] AI", "[01] Proxy", "[02] AutoTest"]}
+  - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] 香港", "[11] 新加坡", "[12] 日本", "[13] 美国", "[14] 台湾", "[15] 其他", "DIRECT"]}
+  - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[11] 新加坡", "DIRECT"], include-all: true}
+  - {name: "[05] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true}
+  - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true}
+  - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true}
+  - {name: "[08] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true}
+  - {name: "[09] AI", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '(?i)us|jp|sg|tw|美国|日本|新加坡|台湾|United States|Japan|Singapore|Taiwan'}
+  - {name: "[10] 香港", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)hk|香港|Hong Kong'}
+  - {name: "[11] 新加坡", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)sg|新加坡|Singapore'}
+  - {name: "[12] 日本", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)jp|日本|Japan'}
+  - {name: "[13] 美国", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)us|美国|United States|America'}
+  - {name: "[14] 台湾", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)tw|台湾|Taiwan'}
+  - {name: "[15] 其他", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(hk|sg|jp|us|tw|香港|新加坡|日本|美国|台湾|官网|套餐|流量|到期|剩余)).*$'}
+  - {name: "[16] Direct", type: select, proxies: ["DIRECT", "[01] Proxy"]}
+  - {name: "[17] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
+  - {name: "[18] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
+  - {name: "[19] GLOBAL", type: select, proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"]}
+  - {name: "[20] Agents", type: select, proxies: ["[09] AI", "[01] Proxy", "[02] AutoTest", "DIRECT"]}
 
 rule-providers:
   reject: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt}
@@ -76,65 +90,76 @@ rule-providers:
   gfw: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt}
   cncidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt}
   lancidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt}
-  telegram: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml}
+  telegram: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml}
   telegramcidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt}
-  twitter: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml}
-  youtube: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml}
-  pikpak: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml}
-  ai: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml}
+  twitter: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml}
+  youtube: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml}
+  pikpak: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml}
+  ai: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml}
 
 rules:
-    - PROCESS-NAME,Antigravity,[20] Agents
-    - PROCESS-NAME,Cursor,[20] Agents
-    - PROCESS-NAME,Windsurf,[20] Agents
-    - PROCESS-NAME,Claude,[20] Agents
-    - PROCESS-NAME,Codex,[20] Agents
-    - PROCESS-NAME, Hermes,[20] Agents
-    - PROCESS-NAME, hermes.exe,[20] Agents
-    - DOMAIN-KEYWORD,antigravity,[09] AI
-    - DOMAIN-KEYWORD, hermes,[09] AI
-    - DOMAIN-SUFFIX,z.ai,[09] AI
-    - DOMAIN-SUFFIX,bigmodel.cn,[09] AI
-    - DOMAIN-SUFFIX,zhipuai.cn,[09] AI
-    - DOMAIN-SUFFIX,qwen.ai,[09] AI
-    - DOMAIN-SUFFIX,qwenlm.ai,[09] AI
-    - DOMAIN-SUFFIX,tongyi.aliyun.com,[09] AI
-    - DOMAIN-SUFFIX,dashscope.aliyuncs.com,[09] AI
-    - DOMAIN-SUFFIX,dashscope.aliyun.com,[09] AI
-    - DOMAIN-SUFFIX,modelscope.cn,[09] AI
-    - DOMAIN-SUFFIX,moonshot.cn,[09] AI
-    - DOMAIN-SUFFIX,kimi.com,[09] AI
-    - DOMAIN-SUFFIX,minimax.chat,[09] AI
-    - DOMAIN-SUFFIX,doubao.com,[09] AI
-    - DOMAIN-SUFFIX,volcengine.com,[09] AI
-    - DOMAIN-SUFFIX,qianfan.baidu.com,[09] AI
-    - DOMAIN-SUFFIX,baichuan-ai.com,[09] AI
-    - DOMAIN-SUFFIX,01.ai,[09] AI
-    - DOMAIN-SUFFIX,xfyun.cn,[09] AI
-    - DOMAIN-SUFFIX,youtube.com,[08] YouTube
-    - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
-    - DOMAIN-SUFFIX,gvt1.com,[08] YouTube
-    - DOMAIN-SUFFIX,gvt2.com,[08] YouTube
-    - DOMAIN-SUFFIX,x.com,[07] Twitter
-    - DOMAIN-SUFFIX,t.me,[05] Telegram
-    - DOMAIN-SUFFIX,gemini.google.com,[09] AI
-    - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
-    - DOMAIN-SUFFIX,google.com,[04] Google
-    - DOMAIN-SUFFIX,openai.com,[09] AI
-    - DOMAIN-SUFFIX,claude.ai,[09] AI
-    - DOMAIN-SUFFIX,anthropic.com,[09] AI
-    - DOMAIN-SUFFIX,x.ai,[09] AI
-    - DOMAIN-SUFFIX,deepseek.com,[09] AI
-    - RULE-SET,reject,[17] Reject
-    - RULE-SET,telegram,[05] Telegram
-    - RULE-SET,twitter,[07] Twitter
-    - RULE-SET,youtube,[08] YouTube
-    - RULE-SET,ai,[09] AI
-    - RULE-SET,proxy,[01] Proxy
-    - RULE-SET,gfw,[01] Proxy
-    - RULE-SET,direct,[16] Direct
-    - RULE-SET,lancidr,[16] Direct,no-resolve
-    - RULE-SET,cncidr,[16] Direct,no-resolve
-    - GEOIP,LAN,[16] Direct,no-resolve
-    - GEOIP,CN,[16] Direct,no-resolve
-    - MATCH,[18] CatchAll
+  # 进程规则（已去除多余空格）
+  - PROCESS-NAME,Antigravity,[20] Agents
+  - PROCESS-NAME,Cursor,[20] Agents
+  - PROCESS-NAME,Windsurf,[20] Agents
+  - PROCESS-NAME,Claude,[20] Agents
+  - PROCESS-NAME,Codex,[20] Agents
+  - PROCESS-NAME,Hermes,[20] Agents
+  - PROCESS-NAME,hermes.exe,[20] Agents
+
+  # AI 平台规则（统一走 [09] AI 代理组，方便访问国际版与海外服务）
+  - DOMAIN-KEYWORD,antigravity,[09] AI
+  - DOMAIN-KEYWORD,hermes,[09] AI
+  - DOMAIN-SUFFIX,z.ai,[09] AI
+  - DOMAIN-SUFFIX,bigmodel.cn,[09] AI
+  - DOMAIN-SUFFIX,zhipuai.cn,[09] AI
+  - DOMAIN-SUFFIX,qwen.ai,[09] AI
+  - DOMAIN-SUFFIX,qwenlm.ai,[09] AI
+  - DOMAIN-SUFFIX,tongyi.aliyun.com,[09] AI
+  - DOMAIN-SUFFIX,dashscope.aliyuncs.com,[09] AI
+  - DOMAIN-SUFFIX,dashscope.aliyun.com,[09] AI
+  - DOMAIN-SUFFIX,modelscope.cn,[09] AI
+  - DOMAIN-SUFFIX,moonshot.cn,[09] AI
+  - DOMAIN-SUFFIX,kimi.com,[09] AI
+  - DOMAIN-SUFFIX,minimax.chat,[09] AI
+  - DOMAIN-SUFFIX,doubao.com,[09] AI
+  - DOMAIN-SUFFIX,volcengine.com,[09] AI
+  - DOMAIN-SUFFIX,qianfan.baidu.com,[09] AI
+  - DOMAIN-SUFFIX,baichuan-ai.com,[09] AI
+  - DOMAIN-SUFFIX,01.ai,[09] AI
+  - DOMAIN-SUFFIX,xfyun.cn,[09] AI
+  - DOMAIN-SUFFIX,gemini.google.com,[09] AI
+  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
+  - DOMAIN-SUFFIX,openai.com,[09] AI
+  - DOMAIN-SUFFIX,claude.ai,[09] AI
+  - DOMAIN-SUFFIX,anthropic.com,[09] AI
+  - DOMAIN-SUFFIX,x.ai,[09] AI
+  - DOMAIN-SUFFIX,deepseek.com,[09] AI
+
+  # 常用流媒体与社交网站
+  - DOMAIN-SUFFIX,youtube.com,[08] YouTube
+  - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
+  - DOMAIN-SUFFIX,gvt1.com,[08] YouTube
+  - DOMAIN-SUFFIX,gvt2.com,[08] YouTube
+  - DOMAIN-SUFFIX,x.com,[07] Twitter
+  - DOMAIN-SUFFIX,t.me,[05] Telegram
+  - DOMAIN-SUFFIX,google.com,[04] Google
+
+  # 外部规则集匹配
+  - RULE-SET,reject,[17] Reject
+  - RULE-SET,telegram,[05] Telegram
+  - RULE-SET,telegramcidr,[05] Telegram,no-resolve
+  - RULE-SET,twitter,[07] Twitter
+  - RULE-SET,youtube,[08] YouTube
+  - RULE-SET,pikpak,[06] PikPak
+  - RULE-SET,ai,[09] AI
+  - RULE-SET,proxy,[01] Proxy
+  - RULE-SET,gfw,[01] Proxy
+  - RULE-SET,direct,[16] Direct
+  - RULE-SET,lancidr,[16] Direct,no-resolve
+  - RULE-SET,cncidr,[16] Direct,no-resolve
+
+  # 兜底规则
+  - GEOIP,LAN,[16] Direct,no-resolve
+  - GEOIP,CN,[16] Direct,no-resolve
+  - MATCH,[18] CatchAll
