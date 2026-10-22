@@ -1,4 +1,4 @@
-# v1.5.3 - 完整修复版（修复 AI 404 + 规则类型匹配 + 中英节点筛选 + 全量 AI 走代理）
+# v1.5.4 - 完整修复版（新增 Google 全家桶规则集与后缀兜底 + 全量 AI 走代理）
 mixed-port: 7890
 socks-port: 7891
 allow-lan: true
@@ -46,19 +46,6 @@ dns:
   proxy-server-nameserver: [https://223.5.5.5/dns-query]
   direct-nameserver: [https://223.5.5.5/dns-query]
 
-# 提示：如果你是将此文件作为独立配置直接拉取（而非在客户端内用 Merge/Override 覆写），
-# 请取消下方 proxy-providers 的注释，并填入你的机场订阅链接：
-# proxy-providers:
-#   my_airport:
-#     type: http
-#     url: "https://你的机场订阅链接填在这里"
-#     interval: 86400
-#     path: ./proxies/my_airport.yaml
-#     health-check:
-#       enable: true
-#       interval: 300
-#       url: https://www.google.com/generate_204
-
 proxies:
 
 proxy-groups:
@@ -94,11 +81,12 @@ rule-providers:
   telegramcidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt}
   twitter: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml}
   youtube: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml}
+  google: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml}
   pikpak: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml}
   ai: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml}
 
 rules:
-  # 进程规则（已去除多余空格）
+  # 1. 进程规则
   - PROCESS-NAME,Antigravity,[20] Agents
   - PROCESS-NAME,Cursor,[20] Agents
   - PROCESS-NAME,Windsurf,[20] Agents
@@ -107,7 +95,7 @@ rules:
   - PROCESS-NAME,Hermes,[20] Agents
   - PROCESS-NAME,hermes.exe,[20] Agents
 
-  # AI 平台规则（统一走 [09] AI 代理组，方便访问国际版与海外服务）
+  # 2. AI 平台规则（排在 Google 之前，确保 Gemini API 等优先走 [09] AI）
   - DOMAIN-KEYWORD,antigravity,[09] AI
   - DOMAIN-KEYWORD,hermes,[09] AI
   - DOMAIN-SUFFIX,z.ai,[09] AI
@@ -130,36 +118,47 @@ rules:
   - DOMAIN-SUFFIX,xfyun.cn,[09] AI
   - DOMAIN-SUFFIX,gemini.google.com,[09] AI
   - DOMAIN-SUFFIX,generativelanguage.googleapis.com,[09] AI
+  - DOMAIN-SUFFIX,aistudio.google.com,[09] AI
   - DOMAIN-SUFFIX,openai.com,[09] AI
   - DOMAIN-SUFFIX,claude.ai,[09] AI
   - DOMAIN-SUFFIX,anthropic.com,[09] AI
   - DOMAIN-SUFFIX,x.ai,[09] AI
   - DOMAIN-SUFFIX,deepseek.com,[09] AI
 
-  # 常用流媒体与社交网站
+  # 3. 常用流媒体与社交网站（排在 Google 之前，确保 YouTube 视频流量优先走 [08] YouTube）
   - DOMAIN-SUFFIX,youtube.com,[08] YouTube
   - DOMAIN-SUFFIX,googlevideo.com,[08] YouTube
+  - DOMAIN-SUFFIX,ytimg.com,[08] YouTube
   - DOMAIN-SUFFIX,gvt1.com,[08] YouTube
   - DOMAIN-SUFFIX,gvt2.com,[08] YouTube
   - DOMAIN-SUFFIX,x.com,[07] Twitter
   - DOMAIN-SUFFIX,t.me,[05] Telegram
-  - DOMAIN-SUFFIX,google.com,[04] Google
 
-  # 外部规则集匹配
+  # 4. Google 核心域名（拦截 googleapis、gstatic 等）
+  - DOMAIN-SUFFIX,google.com,[04] Google
+  - DOMAIN-SUFFIX,googleapis.com,[04] Google
+  - DOMAIN-SUFFIX,gstatic.com,[04] Google
+  - DOMAIN-SUFFIX,ggpht.com,[04] Google
+  - DOMAIN-SUFFIX,googleusercontent.com,[04] Google
+  - DOMAIN-SUFFIX,gmail.com,[04] Google
+  - DOMAIN-SUFFIX,1e100.net,[04] Google
+
+  # 5. 外部规则集匹配
   - RULE-SET,reject,[17] Reject
+  - RULE-SET,ai,[09] AI
+  - RULE-SET,youtube,[08] YouTube
+  - RULE-SET,google,[04] Google
   - RULE-SET,telegram,[05] Telegram
   - RULE-SET,telegramcidr,[05] Telegram,no-resolve
   - RULE-SET,twitter,[07] Twitter
-  - RULE-SET,youtube,[08] YouTube
   - RULE-SET,pikpak,[06] PikPak
-  - RULE-SET,ai,[09] AI
   - RULE-SET,proxy,[01] Proxy
   - RULE-SET,gfw,[01] Proxy
   - RULE-SET,direct,[16] Direct
   - RULE-SET,lancidr,[16] Direct,no-resolve
   - RULE-SET,cncidr,[16] Direct,no-resolve
 
-  # 兜底规则
+  # 6. 兜底规则
   - GEOIP,LAN,[16] Direct,no-resolve
   - GEOIP,CN,[16] Direct,no-resolve
   - MATCH,[18] CatchAll
