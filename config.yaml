@@ -1,4 +1,4 @@
-# v1.5.6 - 四端全兼容终极版（Android / iOS / macOS / Windows 通用 + Apple直连保护 + Google/AI全域名兜底）
+# v1.6.1 - [21] Kark 专属纯净版（仅收录 Kark / Krak 系列规则，已剔除所有其他交易所与 U 卡）
 mixed-port: 7890
 socks-port: 7891
 allow-lan: true
@@ -9,7 +9,6 @@ ipv6: false
 tcp-concurrent: true
 unified-delay: true
 keep-alive-interval: 30
-# 改为 always，兼容 macOS/Windows/Android 进程匹配，同时避免 iOS/macOS 下 strict 模式断流
 find-process-mode: always
 
 profile:
@@ -33,7 +32,6 @@ sniffer:
     TLS: {ports: [443, 8443]}
     HTTP: {ports: [80, 8080-8088]}
     QUIC: {ports: [443, 8443]}
-  # 苹果推送与部分系统服务跳过嗅探，防止 iOS/macOS 掉通知或断连
   skip-domain:
     - 'Mijia Cloud'
     - '+.push.apple.com'
@@ -64,13 +62,11 @@ dns:
   proxy-server-nameserver: [https://223.5.5.5/dns-query]
   direct-nameserver: [https://223.5.5.5/dns-query]
 
-proxies:
-
 proxy-groups:
   - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[10] 香港", "[11] 新加坡", "[12] 日本", "[13] 美国", "[14] 台湾", "[15] 其他", "DIRECT"]}
   - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
   - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-  - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[11] 新加坡", "DIRECT"], include-all: true}
+  - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[11] 新加坡", "[13] 美国", "[12] 日本", "DIRECT"], include-all: true}
   - {name: "[05] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true}
   - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true}
   - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true}
@@ -87,6 +83,7 @@ proxy-groups:
   - {name: "[18] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
   - {name: "[19] GLOBAL", type: select, proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"]}
   - {name: "[20] Agents", type: select, proxies: ["[09] AI", "[01] Proxy", "[02] AutoTest", "DIRECT"]}
+  - {name: "[21] Kark", type: select, include-all: true, proxies: ["[15] 其他", "[11] 新加坡", "[10] 香港", "[12] 日本", "[14] 台湾", "[13] 美国", "[01] Proxy", "DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
 
 rule-providers:
   reject: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt}
@@ -106,7 +103,7 @@ rule-providers:
   ai: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml}
 
 rules:
-  # 1. 桌面端与 Android 进程规则（iOS 会自动安全忽略此段，靠下方域名规则接管）
+  # 1. AI 与桌面端进程规则
   - PROCESS-NAME,Antigravity,[20] Agents
   - PROCESS-NAME,Cursor,[20] Agents
   - PROCESS-NAME,Cursor Helper,[20] Agents
@@ -119,7 +116,26 @@ rules:
   - PROCESS-NAME,com.google.android.apps.bard,[09] AI
   - PROCESS-NAME,com.openai.chatgpt,[09] AI
 
-  # 2. AI 平台全量域名规则（覆盖 iOS/macOS/Android/Windows 所有客户端与网页请求）
+  # 2. [21] Kark 系列专属规则（仅保留 Kark / Krak / Kraken 海妖本系包名与域名）
+  - PROCESS-NAME,com.kraken.pay.app,[21] Kark
+  - PROCESS-NAME,com.kraken.invest.app,[21] Kark
+  - PROCESS-NAME,com.kraken.superapp,[21] Kark
+  - PROCESS-NAME,com.kraken.trade,[21] Kark
+  - DOMAIN-KEYWORD,kark,[21] Kark
+  - DOMAIN-KEYWORD,krak,[21] Kark
+  - DOMAIN-KEYWORD,kraken,[21] Kark
+  - DOMAIN-SUFFIX,kark.com,[21] Kark
+  - DOMAIN-SUFFIX,kark.app,[21] Kark
+  - DOMAIN-SUFFIX,krak.app,[21] Kark
+  - DOMAIN-SUFFIX,krak.com,[21] Kark
+  - DOMAIN-SUFFIX,kraken.com,[21] Kark
+  - DOMAIN-SUFFIX,kraken.ca,[21] Kark
+  - DOMAIN-SUFFIX,kraken.onl,[21] Kark
+  - DOMAIN-SUFFIX,krakenassets.com,[21] Kark
+  - DOMAIN-SUFFIX,payward.com,[21] Kark
+  - DOMAIN-SUFFIX,cryptowat.ch,[21] Kark
+
+  # 3. AI 平台全量域名规则
   - DOMAIN-KEYWORD,antigravity,[09] AI
   - DOMAIN-KEYWORD,hermes,[09] AI
   - DOMAIN-SUFFIX,cursor.sh,[20] Agents
@@ -159,7 +175,7 @@ rules:
   - DOMAIN-SUFFIX,perplexity.ai,[09] AI
   - DOMAIN-SUFFIX,deepseek.com,[09] AI
 
-  # 3. 常用流媒体与社交网站（排在 Google 之前，确保 iOS/Android YouTube 优先走 [08] YouTube）
+  # 4. 流媒体与社交网站（排在 Google 之前）
   - PROCESS-NAME,com.google.android.youtube,[08] YouTube
   - DOMAIN-SUFFIX,youtube.com,[08] YouTube
   - DOMAIN-SUFFIX,youtu.be,[08] YouTube
@@ -172,7 +188,7 @@ rules:
   - DOMAIN-SUFFIX,t.me,[05] Telegram
   - DOMAIN-SUFFIX,tdesktop.com,[05] Telegram
 
-  # 4. Google 核心服务（兼顾 Android 包名与 iOS/macOS 全量域名）
+  # 5. Google 核心服务
   - PROCESS-NAME,com.android.vending,[04] Google
   - PROCESS-NAME,com.google.android.gms,[04] Google
   - PROCESS-NAME,com.google.android.gsf,[04] Google
@@ -191,7 +207,7 @@ rules:
   - DOMAIN-SUFFIX,firebaseio.com,[04] Google
   - DOMAIN-KEYWORD,google,[04] Google
 
-  # 5. 外部规则集匹配（已加入 Apple 与 iCloud 原生直连保护）
+  # 6. 外部规则集匹配
   - RULE-SET,reject,[17] Reject
   - RULE-SET,ai,[09] AI
   - RULE-SET,youtube,[08] YouTube
@@ -208,7 +224,7 @@ rules:
   - RULE-SET,lancidr,[16] Direct,no-resolve
   - RULE-SET,cncidr,[16] Direct,no-resolve
 
-  # 6. 兜底规则
+  # 7. 兜底规则
   - GEOIP,LAN,[16] Direct,no-resolve
   - GEOIP,CN,[16] Direct,no-resolve
   - MATCH,[18] CatchAll
