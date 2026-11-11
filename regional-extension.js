@@ -1,10 +1,8 @@
 /**
- * Clash Meta (Mihomo) 四端全兼容终极覆写脚本 v1.5.7
- * 特性：
- * 1. 自动清洗残缺的 mieru 节点与空名节点，防止内核解析报错
- * 2. 完整接管 DNS / TUN / Sniffer，含 Apple 推送与系统服务保护
- * 3. 全量 AI（含国内大模型国际版）走 [09] AI，Google/YouTube/Telegram 精准分流
- * 4. 兼容 Android / iOS / macOS / Windows 四端
+ * Clash Meta (Mihomo) 四端全兼容终极覆写脚本 v1.6.5
+ * 更新日志：
+ * - 新增 gateway.icloud.com.cn 强制走 [01] Proxy（置于 Apple 规则集前优先拦截）
+ * - 保留 [10] Kark 与 [17] CatchAll 漏网之鱼组
  */
 
 function main(config) {
@@ -88,7 +86,6 @@ function main(config) {
     }
   });
 
-  // 通用排除过滤正则（剔除套餐到期说明与残缺协议）
   const commonExcludeFilter = "^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$";
 
   // 3. 策略组覆写
@@ -97,7 +94,7 @@ function main(config) {
       name: "[01] Proxy",
       type: "select",
       "include-all": true,
-      proxies: ["[02] AutoTest", "[03] Failover", "[10] 香港", "[11] 新加坡", "[12] 日本", "[13] 美国", "[14] 台湾", "[15] 其他", "DIRECT"]
+      proxies: ["[02] AutoTest", "[03] Failover", "[11] 香港", "[12] 新加坡", "[13] 日本", "[14] 美国", "[15] 台湾", "[16] 其他", "DIRECT"]
     },
     {
       name: "[02] AutoTest",
@@ -119,7 +116,7 @@ function main(config) {
     {
       name: "[04] Google",
       type: "select",
-      proxies: ["[01] Proxy", "[02] AutoTest", "[11] 新加坡", "[13] 美国", "[12] 日本", "DIRECT"],
+      proxies: ["[01] Proxy", "[02] AutoTest", "[12] 新加坡", "[14] 美国", "[13] 日本", "DIRECT"],
       "include-all": true
     },
     {
@@ -168,7 +165,14 @@ function main(config) {
       filter: "(?i)us|jp|sg|tw|美国|日本|新加坡|台湾|United States|Japan|Singapore|Taiwan"
     },
     {
-      name: "[10] 香港",
+      name: "[10] Kark",
+      type: "select",
+      "include-all": true,
+      proxies: ["[16] 其他", "[12] 新加坡", "[11] 香港", "[13] 日本", "[15] 台湾", "[14] 美国", "[01] Proxy", "DIRECT"],
+      filter: commonExcludeFilter
+    },
+    {
+      name: "[11] 香港",
       type: "url-test",
       url: "https://www.google.com/generate_204",
       interval: 300,
@@ -177,7 +181,7 @@ function main(config) {
       filter: "(?i)hk|香港|Hong Kong"
     },
     {
-      name: "[11] 新加坡",
+      name: "[12] 新加坡",
       type: "url-test",
       url: "https://www.google.com/generate_204",
       interval: 300,
@@ -186,7 +190,7 @@ function main(config) {
       filter: "(?i)sg|新加坡|Singapore"
     },
     {
-      name: "[12] 日本",
+      name: "[13] 日本",
       type: "url-test",
       url: "https://www.google.com/generate_204",
       interval: 300,
@@ -195,7 +199,7 @@ function main(config) {
       filter: "(?i)jp|日本|Japan"
     },
     {
-      name: "[13] 美国",
+      name: "[14] 美国",
       type: "url-test",
       url: "https://www.google.com/generate_204",
       interval: 300,
@@ -204,7 +208,7 @@ function main(config) {
       filter: "(?i)us|美国|United States|America"
     },
     {
-      name: "[14] 台湾",
+      name: "[15] 台湾",
       type: "url-test",
       url: "https://www.google.com/generate_204",
       interval: 300,
@@ -213,7 +217,7 @@ function main(config) {
       filter: "(?i)tw|台湾|Taiwan"
     },
     {
-      name: "[15] 其他",
+      name: "[16] 其他",
       type: "url-test",
       url: "https://www.google.com/generate_204",
       interval: 300,
@@ -221,11 +225,13 @@ function main(config) {
       "include-all": true,
       filter: "^(?i)(?!.*(hk|sg|jp|us|tw|香港|新加坡|日本|美国|台湾|官网|套餐|流量|到期|剩余)).*$"
     },
-    { name: "[16] Direct", type: "select", proxies: ["DIRECT", "[01] Proxy"] },
-    { name: "[17] Reject", type: "select", proxies: ["REJECT", "DIRECT"] },
-    { name: "[18] CatchAll", type: "select", proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"] },
-    { name: "[19] GLOBAL", type: "select", proxies: ["DIRECT", "[01] Proxy", "[02] AutoTest"] },
-    { name: "[20] Agents", type: "select", proxies: ["[09] AI", "[01] Proxy", "[02] AutoTest", "DIRECT"] }
+    {
+      name: "[17] CatchAll",
+      type: "select",
+      proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]
+    },
+    { name: "[18] Direct", type: "select", proxies: ["DIRECT", "[01] Proxy"] },
+    { name: "[19] Reject", type: "select", proxies: ["REJECT", "DIRECT"] }
   ];
 
   // 4. 外部规则集覆写
@@ -249,26 +255,45 @@ function main(config) {
 
   // 5. 分流规则覆写
   config["rules"] = [
-    // 桌面端与 Android 进程规则（iOS 自动忽略）
-    "PROCESS-NAME,Antigravity,[20] Agents",
-    "PROCESS-NAME,Cursor,[20] Agents",
-    "PROCESS-NAME,Cursor Helper,[20] Agents",
-    "PROCESS-NAME,Windsurf,[20] Agents",
-    "PROCESS-NAME,Claude,[20] Agents",
-    "PROCESS-NAME,Claude Helper,[20] Agents",
-    "PROCESS-NAME,Codex,[20] Agents",
-    "PROCESS-NAME,Hermes,[20] Agents",
-    "PROCESS-NAME,hermes.exe,[20] Agents",
+    // 1. 桌面端与 Android AI 进程规则（统一并入 [09] AI）
+    "PROCESS-NAME,Antigravity,[09] AI",
+    "PROCESS-NAME,Cursor,[09] AI",
+    "PROCESS-NAME,Cursor Helper,[09] AI",
+    "PROCESS-NAME,Windsurf,[09] AI",
+    "PROCESS-NAME,Claude,[09] AI",
+    "PROCESS-NAME,Claude Helper,[09] AI",
+    "PROCESS-NAME,Codex,[09] AI",
+    "PROCESS-NAME,Hermes,[09] AI",
+    "PROCESS-NAME,hermes.exe,[09] AI",
     "PROCESS-NAME,com.google.android.apps.bard,[09] AI",
     "PROCESS-NAME,com.openai.chatgpt,[09] AI",
 
-    // AI 平台全量域名规则（全量走 [09] AI 或 [20] Agents）
+    // 2. [10] Kark 系列专属规则
+    "PROCESS-NAME,com.kraken.pay.app,[10] Kark",
+    "PROCESS-NAME,com.kraken.invest.app,[10] Kark",
+    "PROCESS-NAME,com.kraken.superapp,[10] Kark",
+    "PROCESS-NAME,com.kraken.trade,[10] Kark",
+    "DOMAIN-KEYWORD,kark,[10] Kark",
+    "DOMAIN-KEYWORD,krak,[10] Kark",
+    "DOMAIN-KEYWORD,kraken,[10] Kark",
+    "DOMAIN-SUFFIX,kark.com,[10] Kark",
+    "DOMAIN-SUFFIX,kark.app,[10] Kark",
+    "DOMAIN-SUFFIX,krak.app,[10] Kark",
+    "DOMAIN-SUFFIX,krak.com,[10] Kark",
+    "DOMAIN-SUFFIX,kraken.com,[10] Kark",
+    "DOMAIN-SUFFIX,kraken.ca,[10] Kark",
+    "DOMAIN-SUFFIX,kraken.onl,[10] Kark",
+    "DOMAIN-SUFFIX,krakenassets.com,[10] Kark",
+    "DOMAIN-SUFFIX,payward.com,[10] Kark",
+    "DOMAIN-SUFFIX,cryptowat.ch,[10] Kark",
+
+    // 3. AI 平台全量域名规则（统一走 [09] AI）
     "DOMAIN-KEYWORD,antigravity,[09] AI",
     "DOMAIN-KEYWORD,hermes,[09] AI",
-    "DOMAIN-SUFFIX,cursor.sh,[20] Agents",
-    "DOMAIN-SUFFIX,cursor.com,[20] Agents",
-    "DOMAIN-SUFFIX,codeium.com,[20] Agents",
-    "DOMAIN-SUFFIX,windsurf.com,[20] Agents",
+    "DOMAIN-SUFFIX,cursor.sh,[09] AI",
+    "DOMAIN-SUFFIX,cursor.com,[09] AI",
+    "DOMAIN-SUFFIX,codeium.com,[09] AI",
+    "DOMAIN-SUFFIX,windsurf.com,[09] AI",
     "DOMAIN-SUFFIX,z.ai,[09] AI",
     "DOMAIN-SUFFIX,bigmodel.cn,[09] AI",
     "DOMAIN-SUFFIX,zhipuai.cn,[09] AI",
@@ -302,7 +327,7 @@ function main(config) {
     "DOMAIN-SUFFIX,perplexity.ai,[09] AI",
     "DOMAIN-SUFFIX,deepseek.com,[09] AI",
 
-    // 流媒体与社交网站（排在 Google 之前）
+    // 4. 流媒体与社交网站（排在 Google 之前）
     "PROCESS-NAME,com.google.android.youtube,[08] YouTube",
     "DOMAIN-SUFFIX,youtube.com,[08] YouTube",
     "DOMAIN-SUFFIX,youtu.be,[08] YouTube",
@@ -315,7 +340,7 @@ function main(config) {
     "DOMAIN-SUFFIX,t.me,[05] Telegram",
     "DOMAIN-SUFFIX,tdesktop.com,[05] Telegram",
 
-    // Google 核心服务（兼顾 Android 包名与 iOS/macOS 全量域名）
+    // 5. Google 核心服务
     "PROCESS-NAME,com.android.vending,[04] Google",
     "PROCESS-NAME,com.google.android.gms,[04] Google",
     "PROCESS-NAME,com.google.android.gsf,[04] Google",
@@ -334,8 +359,11 @@ function main(config) {
     "DOMAIN-SUFFIX,firebaseio.com,[04] Google",
     "DOMAIN-KEYWORD,google,[04] Google",
 
-    // 外部规则集匹配
-    "RULE-SET,reject,[17] Reject",
+    // 6. 特殊代理覆盖规则（必须排在 Apple 规则集之前拦截）
+    "DOMAIN,gateway.icloud.com.cn,[01] Proxy",
+
+    // 7. 外部规则集匹配
+    "RULE-SET,reject,[19] Reject",
     "RULE-SET,ai,[09] AI",
     "RULE-SET,youtube,[08] YouTube",
     "RULE-SET,google,[04] Google",
@@ -343,18 +371,18 @@ function main(config) {
     "RULE-SET,telegramcidr,[05] Telegram,no-resolve",
     "RULE-SET,twitter,[07] Twitter",
     "RULE-SET,pikpak,[06] PikPak",
-    "RULE-SET,icloud,[16] Direct",
-    "RULE-SET,apple,[16] Direct",
+    "RULE-SET,icloud,[18] Direct",
+    "RULE-SET,apple,[18] Direct",
     "RULE-SET,proxy,[01] Proxy",
     "RULE-SET,gfw,[01] Proxy",
-    "RULE-SET,direct,[16] Direct",
-    "RULE-SET,lancidr,[16] Direct,no-resolve",
-    "RULE-SET,cncidr,[16] Direct,no-resolve",
+    "RULE-SET,direct,[18] Direct",
+    "RULE-SET,lancidr,[18] Direct,no-resolve",
+    "RULE-SET,cncidr,[18] Direct,no-resolve",
 
-    // 兜底规则
-    "GEOIP,LAN,[16] Direct,no-resolve",
-    "GEOIP,CN,[16] Direct,no-resolve",
-    "MATCH,[18] CatchAll"
+    // 8. 兜底规则
+    "GEOIP,LAN,[18] Direct,no-resolve",
+    "GEOIP,CN,[18] Direct,no-resolve",
+    "MATCH,[17] CatchAll"
   ];
 
   return config;
