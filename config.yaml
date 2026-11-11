@@ -1,4 +1,4 @@
-# v1.6.4 - 保留漏网之鱼精简版（已删除冗余的 GLOBAL 与 Agents，[17] 为 CatchAll 漏网之鱼组）
+# v1.6.5 - 新增 gateway.icloud.com.cn 走代理（置于 Apple 规则集上方）
 mixed-port: 7890
 socks-port: 7891
 allow-lan: true
@@ -205,7 +205,10 @@ rules:
   - DOMAIN-SUFFIX,firebaseio.com,[04] Google
   - DOMAIN-KEYWORD,google,[04] Google
 
-  # 6. 外部规则集匹配
+  # 6. 特殊代理覆盖规则（必须排在 Apple 规则集之前拦截）
+  - DOMAIN,gateway.icloud.com.cn,[01] Proxy
+
+  # 7. 外部规则集匹配
   - RULE-SET,reject,[19] Reject
   - RULE-SET,ai,[09] AI
   - RULE-SET,youtube,[08] YouTube
@@ -222,7 +225,7 @@ rules:
   - RULE-SET,lancidr,[18] Direct,no-resolve
   - RULE-SET,cncidr,[18] Direct,no-resolve
 
-  # 7. 兜底规则
+  # 8. 兜底规则
   - GEOIP,LAN,[18] Direct,no-resolve
   - GEOIP,CN,[18] Direct,no-resolve
   - MATCH,[17] CatchAll
