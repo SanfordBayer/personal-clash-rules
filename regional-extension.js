@@ -1,8 +1,8 @@
 /**
- * Clash Meta (Mihomo) 四端全兼容终极覆写脚本 v1.6.5
- * 更新日志：
- * - 新增 gateway.icloud.com.cn 强制走 [01] Proxy（置于 Apple 规则集前优先拦截）
- * - 保留 [10] Kark 与 [17] CatchAll 漏网之鱼组
+ * Clash Meta (Mihomo) 四端全兼容防 DNS 泄露终极版 v1.6.6
+ * 修复重点：
+ * - 恢复海外加密 DNS (1.1.1.1 / 8.8.4.4) 作为默认 nameserver，彻底根除阿里/移动 DNS 泄露
+ * - 配合 direct-nameserver 与 respect-rules: true，实现国内域名本地秒解析、海外域名 100% 远端代理解析
  */
 
 function main(config) {
@@ -17,7 +17,7 @@ function main(config) {
     });
   }
 
-  // 2. 基础全局配置覆写
+  // 2. 基础全局配置与防泄露 DNS 覆写
   Object.assign(config, {
     "mixed-port": 7890,
     "socks-port": 7891,
@@ -80,7 +80,7 @@ function main(config) {
         "swquery.apple.com"
       ],
       "default-nameserver": ["223.5.5.5", "119.29.29.29"],
-      "nameserver": ["https://223.5.5.5/dns-query", "https://1.12.12.12/dns-query"],
+      "nameserver": ["https://1.1.1.1/dns-query", "https://8.8.4.4/dns-query"],
       "proxy-server-nameserver": ["https://223.5.5.5/dns-query"],
       "direct-nameserver": ["https://223.5.5.5/dns-query"]
     }
@@ -255,7 +255,7 @@ function main(config) {
 
   // 5. 分流规则覆写
   config["rules"] = [
-    // 1. 桌面端与 Android AI 进程规则（统一并入 [09] AI）
+    // 1. 桌面端与 Android AI 进程规则
     "PROCESS-NAME,Antigravity,[09] AI",
     "PROCESS-NAME,Cursor,[09] AI",
     "PROCESS-NAME,Cursor Helper,[09] AI",
@@ -287,7 +287,7 @@ function main(config) {
     "DOMAIN-SUFFIX,payward.com,[10] Kark",
     "DOMAIN-SUFFIX,cryptowat.ch,[10] Kark",
 
-    // 3. AI 平台全量域名规则（统一走 [09] AI）
+    // 3. AI 平台全量域名规则
     "DOMAIN-KEYWORD,antigravity,[09] AI",
     "DOMAIN-KEYWORD,hermes,[09] AI",
     "DOMAIN-SUFFIX,cursor.sh,[09] AI",
@@ -359,8 +359,9 @@ function main(config) {
     "DOMAIN-SUFFIX,firebaseio.com,[04] Google",
     "DOMAIN-KEYWORD,google,[04] Google",
 
-    // 6. 特殊代理覆盖规则（必须排在 Apple 规则集之前拦截）
+    // 6. 特殊代理覆盖规则（置于 Apple 规则集之前拦截）
     "DOMAIN,gateway.icloud.com.cn,[01] Proxy",
+    "DOMAIN-SUFFIX,browserleaks.com,[01] Proxy",
 
     // 7. 外部规则集匹配
     "RULE-SET,reject,[19] Reject",
