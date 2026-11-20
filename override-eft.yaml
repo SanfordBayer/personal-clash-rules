@@ -22,6 +22,7 @@ tun:
   auto-redirect: true
   auto-detect-interface: true
   strict-route: true
+  udp-timeout: 300
 
 sniffer:
   enable: true
@@ -101,12 +102,12 @@ proxy-groups:
     proxies:
       - "[02] AutoTest"
       - "[03] Failover"
-      - "[14] 香港"
-      - "[15] 新加坡"
-      - "[16] 日本"
-      - "[17] 美国"
-      - "[18] 台湾"
-      - "[19] 其他"
+      - "[12] 香港"
+      - "[13] 新加坡"
+      - "[14] 日本"
+      - "[15] 美国"
+      - "[16] 台湾"
+      - "[17] 其他"
       - DIRECT
 
   - name: "[02] AutoTest"
@@ -130,12 +131,12 @@ proxy-groups:
     exclude-filter: "(?i)官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置"
     proxies:
       - "[01] Proxy"
-      - "[14] 香港"
-      - "[15] 新加坡"
-      - "[16] 日本"
-      - "[17] 美国"
-      - "[18] 台湾"
-      - "[19] 其他"
+      - "[12] 香港"
+      - "[13] 新加坡"
+      - "[14] 日本"
+      - "[15] 美国"
+      - "[16] 台湾"
+      - "[17] 其他"
 
   - name: "[05] Telegram"
     type: url-test
@@ -145,7 +146,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[06] PikPak"
+  - name: "[06] YouTube"
     type: url-test
     include-all: true
     exclude-filter: "(?i)官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置"
@@ -153,23 +154,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[07] Twitter"
-    type: url-test
-    include-all: true
-    exclude-filter: "(?i)官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: "[08] YouTube"
-    type: url-test
-    include-all: true
-    exclude-filter: "(?i)官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置"
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
-
-  - name: "[09] AI"
+  - name: "[07] AI"
     type: url-test
     include-all: true
     filter: "(?i)us|jp|sg|tw|美国|日本|新加坡|台湾|United States|Japan|Singapore|Taiwan"
@@ -178,48 +163,41 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[10] Kark"
-    type: select
-    include-all: true
-    exclude-filter: "(?i)官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置"
-    proxies:
-      - "[01] Proxy"
-      - "[14] 香港"
-      - "[15] 新加坡"
-      - "[16] 日本"
-      - "[17] 美国"
-      - "[18] 台湾"
-      - "[19] 其他"
-
-  - name: "[11] 俄区"
+  - name: "[08] 俄区"
     type: select
     include-all: true
     filter: "(?i)ru|俄|莫斯科|圣彼得堡|哈萨克|kz|独联体|Russia|Moscow|Kazakhstan"
     exclude-filter: "(?i)官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置"
 
-  - name: "[12] EFT-Auth"
+  - name: "[09] EFT-Auth"
     type: select
     proxies:
-      - "[11] 俄区"
-      - "[19] 其他"
+      - "[08] 俄区"
+      - "[17] 其他"
       - "[01] Proxy"
       - DIRECT
 
-  - name: "[13] EFT-Raid"
+  - name: "[10] EFT-Raid"
     type: select
     include-all: true
     exclude-filter: "(?i)官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置"
     proxies:
-      - "[14] 香港"
-      - "[16] 日本"
-      - "[15] 新加坡"
-      - "[19] 其他"
-      - "[18] 台湾"
-      - "[17] 美国"
+      - "[12] 香港"
+      - "[14] 日本"
+      - "[13] 新加坡"
+      - "[17] 其他"
+      - "[16] 台湾"
+      - "[15] 美国"
       - "[01] Proxy"
       - DIRECT
 
-  - name: "[14] 香港"
+  - name: "[11] CatchAll"
+    type: select
+    proxies:
+      - "[01] Proxy"
+      - "[18] Direct"
+
+  - name: "[12] 香港"
     type: url-test
     include-all: true
     filter: "(?i)港|hk|hongkong|hong kong"
@@ -228,7 +206,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[15] 新加坡"
+  - name: "[13] 新加坡"
     type: url-test
     include-all: true
     filter: "(?i)新|坡|sg|singapore"
@@ -237,7 +215,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[16] 日本"
+  - name: "[14] 日本"
     type: url-test
     include-all: true
     filter: "(?i)日|东京|大阪|jp|japan"
@@ -246,7 +224,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[17] 美国"
+  - name: "[15] 美国"
     type: url-test
     include-all: true
     filter: "(?i)美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|us|united states"
@@ -255,7 +233,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[18] 台湾"
+  - name: "[16] 台湾"
     type: url-test
     include-all: true
     filter: "(?i)台|新北|彰化|tw|taiwan"
@@ -264,7 +242,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[19] 其他"
+  - name: "[17] 其他"
     type: url-test
     include-all: true
     filter: "^(?!.*(?i)(港|hk|hongkong|hong kong|新|坡|sg|singapore|日|东京|大阪|jp|japan|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|us|united states|台|新北|彰化|tw|taiwan)).*$"
@@ -273,19 +251,13 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-  - name: "[20] CatchAll"
-    type: select
-    proxies:
-      - "[01] Proxy"
-      - "[21] Direct"
-
-  - name: "[21] Direct"
+  - name: "[18] Direct"
     type: select
     proxies:
       - DIRECT
       - "[01] Proxy"
 
-  - name: "[22] Reject"
+  - name: "[19] Reject"
     type: select
     proxies:
       - REJECT
@@ -331,13 +303,6 @@ rule-providers:
     url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml
     path: ./ruleset/bm7_youtube.yaml
     interval: 86400
-  Twitter_BM7:
-    type: http
-    format: yaml
-    behavior: classical
-    url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml
-    path: ./ruleset/bm7_twitter.yaml
-    interval: 86400
   Telegram_BM7:
     type: http
     format: yaml
@@ -351,13 +316,6 @@ rule-providers:
     behavior: classical
     url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml
     path: ./ruleset/bm7_google.yaml
-    interval: 86400
-  PikPak_BM7:
-    type: http
-    format: yaml
-    behavior: classical
-    url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml
-    path: ./ruleset/bm7_pikpak.yaml
     interval: 86400
   OpenAI_BM7:
     type: http
@@ -389,85 +347,69 @@ rule-providers:
     interval: 86400
 
 rules:
-  # --- [最高优先级] 塔科夫双线分流 ---
-  - AND,((PROCESS-NAME,EscapeFromTarkov.exe),(NETWORK,UDP)),[13] EFT-Raid
-  - AND,((PROCESS-NAME,EscapeFromTarkov_BE.exe),(NETWORK,UDP)),[13] EFT-Raid
-  - PROCESS-NAME,EscapeFromTarkov.exe,[12] EFT-Auth
-  - PROCESS-NAME,EscapeFromTarkov_BE.exe,[12] EFT-Auth
-  - PROCESS-NAME,BEService.exe,[12] EFT-Auth
-  - PROCESS-NAME,BEService_x64.exe,[12] EFT-Auth
-  - PROCESS-NAME,BsgLauncher.exe,[12] EFT-Auth
-  - DOMAIN-SUFFIX,escapefromtarkov.com,[12] EFT-Auth
-  - DOMAIN-SUFFIX,battlestategames.com,[12] EFT-Auth
-  - DOMAIN-SUFFIX,tarkov.com,[12] EFT-Auth
+  # --- [最高优先级] 塔科夫游戏 UDP 与认证双线分流 ---
+  - AND,((PROCESS-NAME,EscapeFromTarkov.exe),(NETWORK,UDP)),[10] EFT-Raid
+  - AND,((PROCESS-NAME,EscapeFromTarkov_BE.exe),(NETWORK,UDP)),[10] EFT-Raid
+  - PROCESS-NAME,EscapeFromTarkov.exe,[09] EFT-Auth
+  - PROCESS-NAME,EscapeFromTarkov_BE.exe,[09] EFT-Auth
+  - PROCESS-NAME,BEService.exe,[09] EFT-Auth
+  - PROCESS-NAME,BEService_x64.exe,[09] EFT-Auth
+  - PROCESS-NAME,BsgLauncher.exe,[09] EFT-Auth
+  - DOMAIN-SUFFIX,escapefromtarkov.com,[09] EFT-Auth
+  - DOMAIN-SUFFIX,battlestategames.com,[09] EFT-Auth
+  - DOMAIN-SUFFIX,tarkov.com,[09] EFT-Auth
 
   # --- [第二优先级] 特殊覆盖 ---
   - DOMAIN,gateway.icloud.com.cn,[01] Proxy
   - DOMAIN-SUFFIX,browserleaks.com,[01] Proxy
 
   # --- [第三优先级] AI 与 Agents ---
-  - PROCESS-NAME,Antigravity.exe,[09] AI
-  - PROCESS-NAME,Antigravity,[09] AI
-  - PROCESS-NAME,Cursor.exe,[09] AI
-  - PROCESS-NAME,Cursor,[09] AI
-  - PROCESS-NAME,Windsurf.exe,[09] AI
-  - PROCESS-NAME,Windsurf,[09] AI
-  - PROCESS-NAME,Claude.exe,[09] AI
-  - PROCESS-NAME,Claude,[09] AI
-  - PROCESS-NAME,codex.exe,[09] AI
-  - PROCESS-NAME,codex,[09] AI
-  - PROCESS-NAME,hermes.exe,[09] AI
-  - PROCESS-NAME,hermes,[09] AI
-  - RULE-SET,OpenAI_BM7,[09] AI
-  - RULE-SET,Claude_BM7,[09] AI
-  - RULE-SET,Gemini_BM7,[09] AI
-  - DOMAIN-SUFFIX,chatgpt.com,[09] AI
-  - DOMAIN-SUFFIX,openai.com,[09] AI
-  - DOMAIN-SUFFIX,oaistatic.com,[09] AI
-  - DOMAIN-SUFFIX,oaiusercontent.com,[09] AI
-  - DOMAIN-SUFFIX,anthropic.com,[09] AI
-  - DOMAIN-SUFFIX,claude.ai,[09] AI
-  - DOMAIN-SUFFIX,gemini.google.com,[09] AI
-  - DOMAIN-SUFFIX,aistudio.google.com,[09] AI
-  - DOMAIN-SUFFIX,deepmind.com,[09] AI
-  - DOMAIN-SUFFIX,x.ai,[09] AI
-  - DOMAIN-SUFFIX,grok.com,[09] AI
-  - DOMAIN-SUFFIX,deepseek.com,[09] AI
-  - DOMAIN-SUFFIX,qwen.ai,[09] AI
-  - DOMAIN-SUFFIX,tongyi.aliyun.com,[09] AI
-  - DOMAIN-SUFFIX,z.ai,[09] AI
-  - DOMAIN-SUFFIX,chatglm.cn,[09] AI
-  - DOMAIN-SUFFIX,bigmodel.cn,[09] AI
-  - DOMAIN-SUFFIX,kimi.ai,[09] AI
-  - DOMAIN-SUFFIX,kimi.moonshot.cn,[09] AI
-  - DOMAIN-SUFFIX,moonshot.cn,[09] AI
-  - DOMAIN-SUFFIX,doubao.com,[09] AI
-  - DOMAIN-SUFFIX,coze.com,[09] AI
-  - DOMAIN-SUFFIX,perplexity.ai,[09] AI
-  - DOMAIN-SUFFIX,cursor.sh,[09] AI
-  - DOMAIN-SUFFIX,cursor.com,[09] AI
-  - DOMAIN-SUFFIX,codeium.com,[09] AI
-  - DOMAIN-SUFFIX,windsurf.com,[09] AI
+  - PROCESS-NAME,Antigravity.exe,[07] AI
+  - PROCESS-NAME,Antigravity,[07] AI
+  - PROCESS-NAME,Cursor.exe,[07] AI
+  - PROCESS-NAME,Cursor,[07] AI
+  - PROCESS-NAME,Windsurf.exe,[07] AI
+  - PROCESS-NAME,Windsurf,[07] AI
+  - PROCESS-NAME,Claude.exe,[07] AI
+  - PROCESS-NAME,Claude,[07] AI
+  - PROCESS-NAME,codex.exe,[07] AI
+  - PROCESS-NAME,codex,[07] AI
+  - PROCESS-NAME,hermes.exe,[07] AI
+  - PROCESS-NAME,hermes,[07] AI
+  - RULE-SET,OpenAI_BM7,[07] AI
+  - RULE-SET,Claude_BM7,[07] AI
+  - RULE-SET,Gemini_BM7,[07] AI
+  - DOMAIN-SUFFIX,chatgpt.com,[07] AI
+  - DOMAIN-SUFFIX,openai.com,[07] AI
+  - DOMAIN-SUFFIX,oaistatic.com,[07] AI
+  - DOMAIN-SUFFIX,oaiusercontent.com,[07] AI
+  - DOMAIN-SUFFIX,anthropic.com,[07] AI
+  - DOMAIN-SUFFIX,claude.ai,[07] AI
+  - DOMAIN-SUFFIX,gemini.google.com,[07] AI
+  - DOMAIN-SUFFIX,aistudio.google.com,[07] AI
+  - DOMAIN-SUFFIX,deepmind.com,[07] AI
+  - DOMAIN-SUFFIX,x.ai,[07] AI
+  - DOMAIN-SUFFIX,grok.com,[07] AI
+  - DOMAIN-SUFFIX,deepseek.com,[07] AI
+  - DOMAIN-SUFFIX,qwen.ai,[07] AI
+  - DOMAIN-SUFFIX,tongyi.aliyun.com,[07] AI
+  - DOMAIN-SUFFIX,z.ai,[07] AI
+  - DOMAIN-SUFFIX,chatglm.cn,[07] AI
+  - DOMAIN-SUFFIX,bigmodel.cn,[07] AI
+  - DOMAIN-SUFFIX,kimi.ai,[07] AI
+  - DOMAIN-SUFFIX,kimi.moonshot.cn,[07] AI
+  - DOMAIN-SUFFIX,moonshot.cn,[07] AI
+  - DOMAIN-SUFFIX,doubao.com,[07] AI
+  - DOMAIN-SUFFIX,coze.com,[07] AI
+  - DOMAIN-SUFFIX,perplexity.ai,[07] AI
+  - DOMAIN-SUFFIX,cursor.sh,[07] AI
+  - DOMAIN-SUFFIX,cursor.com,[07] AI
+  - DOMAIN-SUFFIX,codeium.com,[07] AI
+  - DOMAIN-SUFFIX,windsurf.com,[07] AI
 
-  # --- [第四优先级] Kark / Krak / Kraken 专属规则 ---
-  - PROCESS-NAME,com.kraken.invest.app,[10] Kark
-  - PROCESS-NAME,com.kraken.pro,[10] Kark
-  - PROCESS-NAME,com.kraken.futures,[10] Kark
-  - PROCESS-NAME,com.krak.app,[10] Kark
-  - DOMAIN-KEYWORD,kraken,[10] Kark
-  - DOMAIN-KEYWORD,krak,[10] Kark
-  - DOMAIN-KEYWORD,kark,[10] Kark
-  - DOMAIN-SUFFIX,kraken.com,[10] Kark
-  - DOMAIN-SUFFIX,krak.app,[10] Kark
-  - DOMAIN-SUFFIX,kark.app,[10] Kark
-  - DOMAIN-SUFFIX,payward.com,[10] Kark
-  - DOMAIN-SUFFIX,cryptowat.ch,[10] Kark
-
-  # --- [第五优先级] 常用服务分流 ---
-  - RULE-SET,YouTube_BM7,[08] YouTube
-  - RULE-SET,Twitter_BM7,[07] Twitter
+  # --- [第四优先级] 常用服务分流 ---
+  - RULE-SET,YouTube_BM7,[06] YouTube
   - RULE-SET,Telegram_BM7,[05] Telegram
-  - RULE-SET,PikPak_BM7,[06] PikPak
   - PROCESS-NAME,com.google.android.gms,[04] Google
   - PROCESS-NAME,com.google.android.gsf,[04] Google
   - PROCESS-NAME,com.android.vending,[04] Google
@@ -478,15 +420,15 @@ rules:
   - DOMAIN-SUFFIX,ggpht.com,[04] Google
   - RULE-SET,Google_BM7,[04] Google
 
-  # --- [第六优先级] 广告拦截、私有局域网、Apple/iCloud 与国内直连 ---
-  - RULE-SET,Reject_Loyal,[22] Reject
-  - RULE-SET,Private_Loyal,[21] Direct
-  - RULE-SET,Apple_BM7,[21] Direct
-  - RULE-SET,iCloud_BM7,[21] Direct
-  - RULE-SET,Direct_Loyal,[21] Direct
-  - RULE-SET,China_BM7,[21] Direct
-  - GEOIP,PRIVATE,[21] Direct,no-resolve
-  - GEOIP,CN,[21] Direct
+  # --- [第五优先级] 广告拦截、私有局域网、Apple/iCloud 与国内直连 ---
+  - RULE-SET,Reject_Loyal,[19] Reject
+  - RULE-SET,Private_Loyal,[18] Direct
+  - RULE-SET,Apple_BM7,[18] Direct
+  - RULE-SET,iCloud_BM7,[18] Direct
+  - RULE-SET,Direct_Loyal,[18] Direct
+  - RULE-SET,China_BM7,[18] Direct
+  - GEOIP,PRIVATE,[18] Direct,no-resolve
+  - GEOIP,CN,[18] Direct
 
   # --- [最终兜底] ---
-  - MATCH,[20] CatchAll
+  - MATCH,[11] CatchAll
