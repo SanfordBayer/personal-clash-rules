@@ -58,47 +58,47 @@ dns:
     - 'swscan.apple.com'
     - 'swquery.apple.com'
   default-nameserver: [223.5.5.5, 119.29.29.29]
-  nameserver: [https://1.1.1.1/dns-query, https://8.8.4.4/dns-query]
-  proxy-server-nameserver: [https://223.5.5.5/dns-query]
-  direct-nameserver: [https://223.5.5.5/dns-query]
+  nameserver: ['https://1.1.1.1/dns-query', 'https://8.8.4.4/dns-query']
+  proxy-server-nameserver: ['https://223.5.5.5/dns-query']
+  direct-nameserver: ['https://223.5.5.5/dns-query']
 
 proxy-groups:
   - {name: "[01] Proxy", type: select, include-all: true, proxies: ["[02] AutoTest", "[03] Failover", "[11] 香港", "[12] 新加坡", "[13] 日本", "[14] 美国", "[15] 台湾", "[16] 其他", "DIRECT"]}
-  - {name: "[02] AutoTest", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-  - {name: "[03] Failover", type: fallback, url: https://www.google.com/generate_204, interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[02] AutoTest", type: url-test, url: 'https://www.google.com/generate_204', interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[03] Failover", type: fallback, url: 'https://www.google.com/generate_204', interval: 120, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
   - {name: "[04] Google", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "[12] 新加坡", "[14] 美国", "[13] 日本", "DIRECT"], include-all: true}
-  - {name: "[05] Telegram", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true}
-  - {name: "[06] PikPak", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true}
-  - {name: "[07] Twitter", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true}
-  - {name: "[08] YouTube", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true}
-  - {name: "[09] AI", type: url-test, url: https://www.google.com/generate_204, interval: 120, tolerance: 50, include-all: true, filter: '(?i)us|jp|sg|tw|美国|日本|新加坡|台湾|United States|Japan|Singapore|Taiwan'}
+  - {name: "[05] Telegram", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[06] PikPak", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[07] Twitter", type: url-test, url: 'https://www.google.com/generate_204', interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[08] YouTube", type: url-test, url: 'https://www.google.com/generate_204', interval: 120, tolerance: 50, include-all: true, filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
+  - {name: "[09] AI", type: url-test, url: 'https://www.google.com/generate_204', interval: 120, tolerance: 50, include-all: true, filter: '(?i)us|jp|sg|tw|美国|日本|新加坡|台湾|United States|Japan|Singapore|Taiwan'}
   - {name: "[10] Kark", type: select, include-all: true, proxies: ["[16] 其他", "[12] 新加坡", "[11] 香港", "[13] 日本", "[15] 台湾", "[14] 美国", "[01] Proxy", "DIRECT"], filter: '^(?i)(?!.*(官网|套餐|流量|异常|剩余|过期|失效|维护|高倍|倍率|测试|Test|备用|到期|重置)).*$'}
-  - {name: "[11] 香港", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)hk|香港|Hong Kong'}
-  - {name: "[12] 新加坡", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)sg|新加坡|Singapore'}
-  - {name: "[13] 日本", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)jp|日本|Japan'}
-  - {name: "[14] 美国", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)us|美国|United States|America'}
-  - {name: "[15] 台湾", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '(?i)tw|台湾|Taiwan'}
-  - {name: "[16] 其他", type: url-test, url: https://www.google.com/generate_204, interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(hk|sg|jp|us|tw|香港|新加坡|日本|美国|台湾|官网|套餐|流量|到期|剩余)).*$'}
+  - {name: "[11] 香港", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '(?i)hk|香港|Hong Kong'}
+  - {name: "[12] 新加坡", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '(?i)sg|新加坡|Singapore'}
+  - {name: "[13] 日本", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '(?i)jp|日本|Japan'}
+  - {name: "[14] 美国", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '(?i)us|美国|United States|America'}
+  - {name: "[15] 台湾", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '(?i)tw|台湾|Taiwan'}
+  - {name: "[16] 其他", type: url-test, url: 'https://www.google.com/generate_204', interval: 300, tolerance: 100, include-all: true, filter: '^(?i)(?!.*(hk|sg|jp|us|tw|香港|新加坡|日本|美国|台湾|官网|套餐|流量|到期|剩余)).*$'}
   - {name: "[17] CatchAll", type: select, proxies: ["[01] Proxy", "[02] AutoTest", "DIRECT"]}
   - {name: "[18] Direct", type: select, proxies: ["DIRECT", "[01] Proxy"]}
   - {name: "[19] Reject", type: select, proxies: ["REJECT", "DIRECT"]}
 
 rule-providers:
-  reject: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt}
-  proxy: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt}
-  direct: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt}
-  apple: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt}
-  icloud: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt}
-  gfw: {type: http, format: yaml, interval: 86400, behavior: domain, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt}
-  cncidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt}
-  lancidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt}
-  telegram: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml}
-  telegramcidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt}
-  twitter: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml}
-  youtube: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml}
-  google: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml}
-  pikpak: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml}
-  ai: {type: http, format: yaml, interval: 86400, behavior: classical, url: https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml}
+  reject: {type: http, format: yaml, interval: 86400, behavior: domain, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt'}
+  proxy: {type: http, format: yaml, interval: 86400, behavior: domain, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt'}
+  direct: {type: http, format: yaml, interval: 86400, behavior: domain, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt'}
+  apple: {type: http, format: yaml, interval: 86400, behavior: domain, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt'}
+  icloud: {type: http, format: yaml, interval: 86400, behavior: domain, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt'}
+  gfw: {type: http, format: yaml, interval: 86400, behavior: domain, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt'}
+  cncidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt'}
+  lancidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt'}
+  telegram: {type: http, format: yaml, interval: 86400, behavior: classical, url: 'https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml'}
+  telegramcidr: {type: http, format: yaml, interval: 86400, behavior: ipcidr, url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt'}
+  twitter: {type: http, format: yaml, interval: 86400, behavior: classical, url: 'https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml'}
+  youtube: {type: http, format: yaml, interval: 86400, behavior: classical, url: 'https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml'}
+  google: {type: http, format: yaml, interval: 86400, behavior: classical, url: 'https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml'}
+  pikpak: {type: http, format: yaml, interval: 86400, behavior: classical, url: 'https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml'}
+  ai: {type: http, format: yaml, interval: 86400, behavior: classical, url: 'https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml'}
 
 rules:
   # 1. AI 与桌面端进程规则
