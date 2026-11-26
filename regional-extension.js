@@ -1,6 +1,7 @@
 /**
- * Clash Meta (Mihomo) 四端全兼容防 DNS 泄露终极版 v1.6.6
+ * Clash Meta (Mihomo) 四端全兼容防泄露终极版 v1.6.7
  * 修复重点：
+ * - 恢复 STUN/TURN 拦截规则（DOMAIN-KEYWORD stun/turn 与 UDP 19302），防止 WebRTC 泄露真实公网 IP
  * - 恢复海外加密 DNS (1.1.1.1 / 8.8.4.4) 作为默认 nameserver，彻底根除阿里/移动 DNS 泄露
  * - 配合 direct-nameserver 与 respect-rules: true，实现国内域名本地秒解析、海外域名 100% 远端代理解析
  */
@@ -255,6 +256,11 @@ function main(config) {
 
   // 5. 分流规则覆写
   config["rules"] = [
+    // 0. 防 WebRTC 泄露：拒绝 STUN/TURN 探测，避免网页读到真实公网 IP
+    "DOMAIN-KEYWORD,stun,REJECT",
+    "DOMAIN-KEYWORD,turn,REJECT",
+    "AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT",
+
     // 1. 桌面端与 Android AI 进程规则
     "PROCESS-NAME,Antigravity,[09] AI",
     "PROCESS-NAME,Cursor,[09] AI",
